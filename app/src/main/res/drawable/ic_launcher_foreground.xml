@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder icon: two crossed swords. Replace with final artwork before release. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,34 L40,34 L74,68 L74,74 L68,74 L34,40 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M74,34 L68,34 L34,68 L34,74 L40,74 L74,40 Z" />
+    <path
+        android:fillColor="#1B1B2F"
+        android:pathData="M54,46 A8,8 0 1,1 54,62 A8,8 0 1,1 54,46 Z" />
+</vector>
