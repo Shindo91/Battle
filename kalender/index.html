@@ -127,6 +127,21 @@
   .day:hover { background: #dbeafe !important; }
   .day.weekend { background: var(--weekend); }
   .day.holiday { background: var(--holiday); }
+  .hlabel {
+    z-index: 1;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 2px;
+    font-size: min(0.8em, 11px);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--holiday-text);
+    overflow: hidden;
+    hyphens: manual;
+  }
   .day.invalid { background: repeating-linear-gradient(45deg, #f3f4f6, #f3f4f6 3px, #e5e7eb 3px, #e5e7eb 6px); cursor: default; }
   .day.today { box-shadow: inset 0 0 0 2px var(--today); }
   .wd {
@@ -384,6 +399,20 @@
     return list;
   }
 
+  // Kurzformen für die schmalen Tagesspalten in Jahr/Halbjahr
+  const HOLIDAY_SHORT = {
+    'Heilige Drei Könige': 'Hl. Drei Könige', 'Christi Himmelfahrt': 'Himmel\u00adfahrt',
+    'Tag der Arbeit': '1. Mai', 'Tag der Deutschen Einheit': 'Dt. Einheit',
+    'Mariä Himmelfahrt': 'Mariä Himmelf.', 'Mariä Himmelfahrt (teilw.)': 'Mariä Himmelf.',
+    'Ostersonntag': 'Oster\u00adsonntag', 'Ostermontag': 'Oster\u00admontag',
+    'Pfingstsonntag': 'Pfingst\u00adsonntag', 'Pfingstmontag': 'Pfingst\u00admontag',
+    'Fronleichnam': 'Fron\u00adleichnam', 'Reformationstag': 'Reforma\u00adtionstag',
+    'Allerheiligen': 'Aller\u00adheiligen', 'Buß- und Bettag': 'Buß- und Bettag',
+    'Weltkindertag': 'Welt\u00adkindertag', 'Frauentag': 'Frauen\u00adtag',
+    '1. Weihnachtstag': '1. Weih\u00adnachtstag', '2. Weihnachtstag': '2. Weih\u00adnachtstag',
+    'Karfreitag': 'Kar\u00adfreitag',
+  };
+
   const holidayCache = new Map();
   function holidayName(date) {
     const y = +date.slice(0, 4);
@@ -537,6 +566,15 @@
           cal.appendChild(c);
         });
         renderBars(band.days, p, r, single);
+      });
+
+      // Feiertagsname quer über die drei Personenzeilen (Monat/Woche: steht schon im Kopf)
+      if (!single) band.days.forEach((date, i) => {
+        const hol = date && holidayName(date);
+        if (!hol) return;
+        const l = el('div', 'hlabel', { gridColumn: i + 3, gridRow: `${wdRow + 1} / span 3` });
+        l.textContent = HOLIDAY_SHORT[hol] || hol;
+        cal.appendChild(l);
       });
       row += 4;
     });
