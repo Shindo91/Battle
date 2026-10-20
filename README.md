@@ -94,6 +94,8 @@ Keine Installation, kein Server.
 - **Einträge** mit Bezeichnung, Zeitraum *von – bis*, Farbe (Palette oder eigene Farbe) und
   einer oder mehreren Personen. Anlegen über „+ Eintrag“ oder Klick auf einen Tag;
   Klick auf einen Balken zum Bearbeiten/Löschen. Überlappende Einträge werden gestapelt.
-- **Einstellungen**: Namen und Farben der 3 Personen, Export/Import der Daten als JSON.
+- **Feiertage** (Deutschland) werden rosa markiert, mit Namen im Tooltip bzw. in Monats- und
+  Wochenansicht. Bundesland in den Einstellungen wählbar; wird für jedes Jahr automatisch berechnet.
+- **Einstellungen**: Namen und Farben der 3 Personen, Bundesland für Feiertage, Export/Import der Daten als JSON.
 - Daten werden im Browser (`localStorage`) gespeichert – per Export/Import auf einen anderen
   Rechner übertragbar.

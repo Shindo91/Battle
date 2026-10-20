@@ -12,6 +12,8 @@
     --muted: #6b7280;
     --line: #e2e5ea;
     --weekend: #eef0f4;
+    --holiday: #fde4e8;
+    --holiday-text: #be123c;
     --today: #e11d48;
     --accent: #2563eb;
   }
@@ -124,6 +126,7 @@
   }
   .day:hover { background: #dbeafe !important; }
   .day.weekend { background: var(--weekend); }
+  .day.holiday { background: var(--holiday); }
   .day.invalid { background: repeating-linear-gradient(45deg, #f3f4f6, #f3f4f6 3px, #e5e7eb 3px, #e5e7eb 6px); cursor: default; }
   .day.today { box-shadow: inset 0 0 0 2px var(--today); }
   .wd {
@@ -138,7 +141,10 @@
     line-height: 1;
   }
   .wd.weekend { background: var(--weekend); color: var(--text); font-weight: 700; }
+  .wd.holiday { background: var(--holiday); color: var(--holiday-text); font-weight: 700; }
   .wd.today { background: var(--today); color: #fff; font-weight: 700; }
+  .wd .hname { font-size: .7em; font-weight: 600; max-width: 100%; padding: 0 2px; text-align: center; line-height: 1.1;
+               overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; hyphens: auto; }
   .wd.invalid { background: repeating-linear-gradient(45deg, #f3f4f6, #f3f4f6 3px, #e5e7eb 3px, #e5e7eb 6px); }
 
   .bar {
@@ -177,7 +183,7 @@
   form .row.inline { flex-direction: row; gap: 12px; }
   form .row.inline > div { flex: 1; display: flex; flex-direction: column; gap: 4px; }
   label.cap { font-size: .85rem; font-weight: 600; color: var(--muted); }
-  input[type=text], input[type=date] {
+  input[type=text], input[type=date], select {
     font: inherit;
     padding: 7px 9px;
     border: 1px solid #cbd0d8;
@@ -265,6 +271,10 @@
       <div id="sPersons"></div>
     </div>
     <div class="row">
+      <label class="cap" for="sRegion">Feiertage</label>
+      <select id="sRegion"></select>
+    </div>
+    <div class="row">
       <span class="cap">Daten sichern / übertragen</span>
       <div class="swatches">
         <button type="button" id="exportBtn">Exportieren (JSON)</button>
@@ -322,6 +332,64 @@
   const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
   const todayIso = () => { const t = new Date(); return iso(t.getFullYear(), t.getMonth(), t.getDate()); };
   const fmt = s => { const [y, m, d] = s.split('-'); return `${d}.${m}.${y}`; };
+
+  // ---------- Feiertage (Deutschland, nach Bundesland) ----------
+  const REGIONS = {
+    NONE: 'Keine Feiertage anzeigen', DE: 'Nur bundesweite Feiertage',
+    BW: 'Baden-Württemberg', BY: 'Bayern', BE: 'Berlin', BB: 'Brandenburg', HB: 'Bremen',
+    HH: 'Hamburg', HE: 'Hessen', MV: 'Mecklenburg-Vorpommern', NI: 'Niedersachsen',
+    NW: 'Nordrhein-Westfalen', RP: 'Rheinland-Pfalz', SL: 'Saarland', SN: 'Sachsen',
+    ST: 'Sachsen-Anhalt', SH: 'Schleswig-Holstein', TH: 'Thüringen',
+  };
+
+  // Ostersonntag (Gaußsche Osterformel, gregorianisch)
+  function easter(y) {
+    const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4;
+    const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(y, month - 1, day);
+  }
+
+  function computeHolidays(y, region) {
+    const list = new Map();
+    if (region === 'NONE') return list;
+    const E = easter(y);
+    const add = (d, name, regions) => { if (!regions || regions.includes(region)) list.set(toIso(d), name); };
+    const fix = (m, d) => new Date(y, m - 1, d);
+    add(fix(1, 1), 'Neujahr');
+    add(fix(1, 6), 'Heilige Drei Könige', ['BW', 'BY', 'ST']);
+    if (y >= 2019) add(fix(3, 8), 'Frauentag', y >= 2023 ? ['BE', 'MV'] : ['BE']);
+    add(addDays(E, -2), 'Karfreitag');
+    add(E, 'Ostersonntag', ['BB']);
+    add(addDays(E, 1), 'Ostermontag');
+    add(fix(5, 1), 'Tag der Arbeit');
+    add(addDays(E, 39), 'Christi Himmelfahrt');
+    add(addDays(E, 49), 'Pfingstsonntag', ['BB']);
+    add(addDays(E, 50), 'Pfingstmontag');
+    add(addDays(E, 60), 'Fronleichnam', ['BW', 'BY', 'HE', 'NW', 'RP', 'SL']);
+    add(fix(8, 15), 'Mariä Himmelfahrt', ['SL']);
+    add(fix(8, 15), 'Mariä Himmelfahrt (teilw.)', ['BY']);
+    if (y >= 2019) add(fix(9, 20), 'Weltkindertag', ['TH']);
+    add(fix(10, 3), 'Tag der Deutschen Einheit');
+    add(fix(10, 31), 'Reformationstag',
+        y >= 2018 ? ['BB', 'HB', 'HH', 'MV', 'NI', 'SN', 'ST', 'SH', 'TH'] : ['BB', 'MV', 'SN', 'ST', 'TH']);
+    if (y === 2017) add(fix(10, 31), 'Reformationstag'); // 500 Jahre Reformation, bundesweit
+    add(fix(11, 1), 'Allerheiligen', ['BW', 'BY', 'NW', 'RP', 'SL']);
+    const nov22 = fix(11, 22);
+    add(addDays(nov22, -((nov22.getDay() + 4) % 7)), 'Buß- und Bettag', ['SN']); // Mittwoch vor dem 23.11.
+    add(fix(12, 25), '1. Weihnachtstag');
+    add(fix(12, 26), '2. Weihnachtstag');
+    return list;
+  }
+
+  const holidayCache = new Map();
+  function holidayName(date) {
+    const y = +date.slice(0, 4);
+    if (!holidayCache.has(y)) holidayCache.set(y, computeHolidays(y, state.holidayRegion || 'DE'));
+    return holidayCache.get(y).get(date) || '';
+  }
 
   // ---------- Rendering ----------
   const cal = document.getElementById('calendar');
@@ -394,7 +462,7 @@
     // Monat/Woche: Wochentag + Datum direkt in der Zeile über den Personen.
     cal.style.gridTemplateColumns = `${single ? '0' : '4.2rem'} ${single ? '8rem' : '5.5rem'} repeat(${cols}, minmax(0, 1fr))`;
     cal.style.gridTemplateRows = (single ? '' : 'minmax(1.6em, auto) ') +
-      `repeat(${bands.length}, ${single ? '3em' : '1.4em'} minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr))`;
+      `repeat(${bands.length}, ${single ? '3.8em' : '1.4em'} minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr))`;
 
     let row = 1;
     if (!single) {
@@ -425,15 +493,19 @@
         } else {
           const [yy, mm, dd] = date.split('-').map(Number);
           const wd = new Date(yy, mm - 1, dd).getDay();
+          const hol = holidayName(date);
           if (single) {
-            w.append(el('b'), el('span'));
-            w.firstChild.textContent = WEEKDAYS[wd];
-            w.lastChild.textContent = `${pad(dd)}.${pad(mm)}.`;
+            const b = el('b'), d = el('span');
+            b.textContent = WEEKDAYS[wd];
+            d.textContent = `${pad(dd)}.${pad(mm)}.`;
+            w.append(b, d);
+            if (hol) { const h = el('span', 'hname'); h.textContent = hol; w.appendChild(h); }
           } else {
             w.textContent = WEEKDAYS[wd];
           }
-          w.title = `${WEEKDAYS[wd]}, ${fmt(date)}${view === 'week' ? '' : ' – Wochenansicht öffnen'}`;
+          w.title = `${WEEKDAYS[wd]}, ${fmt(date)}${hol ? ' – ' + hol : ''}${view === 'week' ? '' : '\n(Klick: Wochenansicht)'}`;
           if (wd === 0 || wd === 6) w.classList.add('weekend');
+          if (hol) w.classList.add('holiday');
           if (date === today) w.classList.add('today');
           if (view !== 'week') w.classList.add('link');
           if (view !== 'week') w.addEventListener('click', () => { cursor = new Date(yy, mm - 1, dd); setView('week'); });
@@ -457,6 +529,8 @@
             const [yy, mm, dd] = date.split('-').map(Number);
             const wd = new Date(yy, mm - 1, dd).getDay();
             if (wd === 0 || wd === 6) c.classList.add('weekend');
+            const hol = holidayName(date);
+            if (hol) { c.classList.add('holiday'); c.title = hol; }
             if (date === today) c.classList.add('today');
             c.addEventListener('click', () => openEntry(null, { from: date, to: date, persons: [p.id] }));
           }
@@ -629,6 +703,10 @@
   // ---------- Einstellungen ----------
   const sDlg = document.getElementById('settingsDialog');
   const sPersons = document.getElementById('sPersons');
+  const sRegion = document.getElementById('sRegion');
+  sRegion.replaceChildren(...Object.entries(REGIONS).map(([k, v]) => {
+    const o = el('option'); o.value = k; o.textContent = v; return o;
+  }));
 
   document.getElementById('settingsBtn').addEventListener('click', () => {
     sPersons.replaceChildren(...state.persons.map(p => {
@@ -638,6 +716,7 @@
       row.append(c, n);
       return row;
     }));
+    sRegion.value = state.holidayRegion || 'DE';
     sDlg.showModal();
   });
   document.getElementById('settingsForm').addEventListener('submit', () => {
@@ -646,6 +725,8 @@
       const v = i.value.trim();
       if (p && v) p[i.dataset.k] = v;
     });
+    state.holidayRegion = sRegion.value;
+    holidayCache.clear();
     save();
     render();
   });
@@ -669,6 +750,7 @@
       if (!Array.isArray(s.persons) || s.persons.length !== 3 || !Array.isArray(s.entries)) throw new Error();
       if (!confirm('Aktuelle Daten durch die importierte Datei ersetzen?')) return;
       state = s;
+      holidayCache.clear();
       save();
       render();
       sDlg.close();
@@ -709,7 +791,7 @@
   }, 60 * 1000);
 
   // Änderungen aus einem anderen Tab übernehmen
-  window.addEventListener('storage', e => { if (e.key === STORAGE_KEY) { state = load(); render(); } });
+  window.addEventListener('storage', e => { if (e.key === STORAGE_KEY) { state = load(); holidayCache.clear(); render(); } });
 
   render();
 })();
