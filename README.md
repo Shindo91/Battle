@@ -77,3 +77,20 @@ Ohne Android SDK (keine `local.properties`, kein `ANDROID_HOME`) wird nur `core`
 - **Serverseitige Kaufprüfung**: Käufe vor der Gutschrift auf einem Server prüfen (siehe TODO in `BillingManager`).
 - **Cloud-Speicherstand** (z. B. Play Games Services), damit Fortschritt beim Gerätewechsel erhalten bleibt.
 - Echte Grafiken und Animationen, Sound, mehr Kreaturen und Attacken, Events, Battle Pass.
+
+---
+
+# Jahreskalender (`kalender/`)
+
+Eigenständiger Jahreskalender für einen Monitor – unabhängig vom Spiel. Einfach
+`kalender/index.html` im Browser öffnen (z. B. Chrome/Edge im Vollbild mit `F11` bzw. dem ⛶-Button).
+Keine Installation, kein Server.
+
+- **Jahresansicht** auf einem Bildschirm: 12 Monate × 3 Personen, Spalten = Tage 1–31,
+  Wochenenden grau, heutiger Tag rot umrandet, Jahr mit ◀ ▶ wechseln.
+- **Einträge** mit Bezeichnung, Zeitraum *von – bis*, Farbe (Palette oder eigene Farbe) und
+  einer oder mehreren Personen. Anlegen über „+ Eintrag“ oder Klick auf einen Tag;
+  Klick auf einen Balken zum Bearbeiten/Löschen. Überlappende Einträge werden gestapelt.
+- **Einstellungen**: Namen und Farben der 3 Personen, Export/Import der Daten als JSON.
+- Daten werden im Browser (`localStorage`) gespeichert – per Export/Import auf einen anderen
+  Rechner übertragbar.
