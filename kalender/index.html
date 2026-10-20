@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Jahreskalender</title>
+<title>Kalender</title>
 <style>
   :root {
     --bg: #f4f5f7;
@@ -36,7 +36,12 @@
     border-bottom: 1px solid var(--line);
     flex-wrap: wrap;
   }
-  header h1 { margin: 0; font-size: 1.6rem; font-weight: 700; min-width: 4ch; text-align: center; }
+  header h1 { margin: 0; font-size: 1.6rem; font-weight: 700; min-width: 4ch; text-align: center; white-space: nowrap; }
+  .seg { display: inline-flex; }
+  .seg button { border-radius: 0; margin-left: -1px; }
+  .seg button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
+  .seg button:last-child { border-radius: 0 6px 6px 0; }
+  .seg button.active { background: var(--text); border-color: var(--text); color: #fff; }
   .legend { display: flex; gap: 14px; margin-left: 12px; flex-wrap: wrap; }
   .legend span { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
   .legend i { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
@@ -68,6 +73,18 @@
     overflow: hidden;
     font-size: clamp(9px, 1.15vh, 14px);
   }
+  #calendar.view-half { font-size: clamp(10px, 1.6vh, 17px); }
+  #calendar.view-month { font-size: clamp(11px, 1.7vh, 18px); }
+  #calendar.view-week { font-size: clamp(13px, 2.2vh, 24px); }
+  .month { cursor: pointer; }
+  .month:hover { color: var(--accent); }
+  .wd.link { cursor: pointer; }
+  .wd.link:hover { color: var(--accent); }
+  .view-month .wd, .view-week .wd { flex-direction: column; gap: 2px; font-size: 0.95em; }
+  .view-week .person, .view-month .person { font-size: 1.1em; color: var(--text); font-weight: 600; }
+  .view-week .person i, .view-month .person i { width: 12px; height: 12px; }
+  .bar .range { font-weight: 400; opacity: .85; margin-left: .6em; font-size: .85em; }
+  .view-week .bar { font-size: 1.05em; padding: 0 8px; }
   .hd {
     font-weight: 700;
     color: var(--muted);
@@ -185,9 +202,15 @@
 <body>
 
 <header>
-  <button id="prevYear" title="Vorheriges Jahr">◀</button>
+  <div class="seg" id="viewSwitch">
+    <button data-view="week" title="Taste W">Woche</button>
+    <button data-view="month" title="Taste M">Monat</button>
+    <button data-view="half" title="Taste H">Halbjahr</button>
+    <button data-view="year" title="Taste J">Jahr</button>
+  </div>
+  <button id="prevYear" title="Zurück (←)">◀</button>
   <h1 id="yearLabel"></h1>
-  <button id="nextYear" title="Nächstes Jahr">▶</button>
+  <button id="nextYear" title="Weiter (→)">▶</button>
   <button id="todayBtn">Heute</button>
   <div class="legend" id="legend"></div>
   <div class="spacer"></div>
@@ -292,7 +315,6 @@
   }
 
   let state = load();
-  let year = new Date().getFullYear();
 
   // ---------- Datum-Helfer (lokale Zeit, Format YYYY-MM-DD) ----------
   const pad = n => String(n).padStart(2, '0');
@@ -311,94 +333,164 @@
     return e;
   }
 
+  // Ansicht: 'week' | 'month' | 'half' | 'year'; cursor = Bezugsdatum der Ansicht
+  const VIEWS = { week: 'Woche', month: 'Monat', half: 'Halbjahr', year: 'Jahr' };
+  const VIEW_KEY = 'jahreskalender.view';
+  let view = 'year';
+  try { const v = localStorage.getItem(VIEW_KEY); if (VIEWS[v]) view = v; } catch (e) { /* egal */ }
+  let cursor = startOfDay(new Date());
+
+  function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  const toIso = d => iso(d.getFullYear(), d.getMonth(), d.getDate());
+  function mondayOf(d) { return addDays(d, -((d.getDay() + 6) % 7)); }
+  function isoWeek(d) {
+    const t = addDays(d, 3 - ((d.getDay() + 6) % 7)); // Donnerstag derselben Woche
+    const firstThu = new Date(t.getFullYear(), 0, 4);
+    return 1 + Math.round(((t - firstThu) / 864e5 - 3 + ((firstThu.getDay() + 6) % 7)) / 7);
+  }
+
+  // Ein "Band" ist ein Zeitraum, der als Block (Wochentag-Zeile + 3 Personenzeilen) gezeigt wird.
+  // days[i] = ISO-Datum der Spalte i oder null (z. B. 30./31. Februar).
+  function monthBand(y, m) {
+    const dim = daysInMonth(y, m);
+    return {
+      label: MONTHS[m].slice(0, 3), title: MONTHS[m], month: m, year: y,
+      days: Array.from({ length: 31 }, (_, i) => i < dim ? iso(y, m, i + 1) : null),
+    };
+  }
+
+  function layout() {
+    const y = cursor.getFullYear(), m = cursor.getMonth();
+    if (view === 'year') {
+      return { title: String(y), bands: Array.from({ length: 12 }, (_, i) => monthBand(y, i)) };
+    }
+    if (view === 'half') {
+      const h = m < 6 ? 0 : 6;
+      return { title: `${h ? 2 : 1}. Halbjahr ${y}`, bands: Array.from({ length: 6 }, (_, i) => monthBand(y, h + i)) };
+    }
+    if (view === 'month') {
+      const dim = daysInMonth(y, m);
+      return { title: `${MONTHS[m]} ${y}`, single: true,
+               bands: [{ days: Array.from({ length: dim }, (_, i) => iso(y, m, i + 1)) }] };
+    }
+    const mon = mondayOf(cursor), sun = addDays(mon, 6);
+    const short = d => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.`;
+    return { title: `KW ${isoWeek(mon)} · ${short(mon)}–${short(sun)}${sun.getFullYear()}`, single: true,
+             bands: [{ days: Array.from({ length: 7 }, (_, i) => toIso(addDays(mon, i))) }] };
+  }
+
   function render() {
-    document.getElementById('yearLabel').textContent = year;
+    const { title, bands, single } = layout();
+    document.getElementById('yearLabel').textContent = title;
+    document.querySelectorAll('#viewSwitch button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
     renderLegend();
     cal.replaceChildren();
+    cal.className = 'view-' + view;
     const today = todayIso();
+    const cols = bands[0].days.length;
 
-    // Grid: Zeile 1 = Kopf, danach pro Monat eine Wochentag-Zeile und 3 Zeilen (eine je Person)
-    cal.style.gridTemplateRows = `minmax(1.6em, auto) repeat(12, 1.4em repeat(3, minmax(0, 1fr)))`;
+    // Jahr/Halbjahr: Kopfzeile mit Tageszahlen, Monatsname links.
+    // Monat/Woche: Wochentag + Datum direkt in der Zeile über den Personen.
+    cal.style.gridTemplateColumns = `${single ? '0' : '4.2rem'} ${single ? '8rem' : '5.5rem'} repeat(${cols}, minmax(0, 1fr))`;
+    cal.style.gridTemplateRows = (single ? '' : 'minmax(1.6em, auto) ') +
+      `repeat(${bands.length}, ${single ? '3em' : '1.4em'} minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr))`;
 
-    cal.appendChild(el('div', 'hd', { gridColumn: '1 / 3', gridRow: 1 }));
-    for (let d = 1; d <= 31; d++) {
-      const h = el('div', 'hd', { gridColumn: d + 2, gridRow: 1 });
-      h.textContent = d;
-      cal.appendChild(h);
+    let row = 1;
+    if (!single) {
+      cal.appendChild(el('div', 'hd', { gridColumn: '1 / 3', gridRow: 1 }));
+      for (let d = 1; d <= cols; d++) {
+        const h = el('div', 'hd', { gridColumn: d + 2, gridRow: 1 });
+        h.textContent = d;
+        cal.appendChild(h);
+      }
+      row = 2;
     }
 
-    for (let m = 0; m < 12; m++) {
-      const wdRow = 2 + m * 4;
-      const baseRow = wdRow + 1;
-      const mEl = el('div', 'month', { gridRow: `${wdRow} / span 4` });
-      mEl.textContent = MONTHS[m].slice(0, 3);
-      mEl.title = MONTHS[m];
-      cal.appendChild(mEl);
-      const dim = daysInMonth(year, m);
-
-      cal.appendChild(el('div', 'wd', { gridColumn: 2, gridRow: wdRow }));
-      for (let d = 1; d <= 31; d++) {
-        const w = el('div', 'wd', { gridColumn: d + 2, gridRow: wdRow });
-        if (d > dim) {
-          w.classList.add('invalid');
-        } else {
-          const wd = new Date(year, m, d).getDay();
-          w.textContent = WEEKDAYS[wd];
-          w.title = `${WEEKDAYS[wd]}, ${pad(d)}.${pad(m + 1)}.${year}`;
-          if (wd === 0 || wd === 6) w.classList.add('weekend');
-          if (iso(year, m, d) === today) w.classList.add('today');
-        }
-        cal.appendChild(w);
+    bands.forEach(band => {
+      const wdRow = row;
+      if (!single) {
+        const mEl = el('div', 'month', { gridRow: `${wdRow} / span 4` });
+        mEl.textContent = band.label;
+        mEl.title = `${band.title} – Monatsansicht öffnen`;
+        mEl.addEventListener('click', () => { cursor = new Date(band.year, band.month, 1); setView('month'); });
+        cal.appendChild(mEl);
       }
 
+      cal.appendChild(el('div', 'wd', { gridColumn: 2, gridRow: wdRow }));
+      band.days.forEach((date, i) => {
+        const w = el('div', 'wd', { gridColumn: i + 3, gridRow: wdRow });
+        if (!date) {
+          w.classList.add('invalid');
+        } else {
+          const [yy, mm, dd] = date.split('-').map(Number);
+          const wd = new Date(yy, mm - 1, dd).getDay();
+          if (single) {
+            w.append(el('b'), el('span'));
+            w.firstChild.textContent = WEEKDAYS[wd];
+            w.lastChild.textContent = `${pad(dd)}.${pad(mm)}.`;
+          } else {
+            w.textContent = WEEKDAYS[wd];
+          }
+          w.title = `${WEEKDAYS[wd]}, ${fmt(date)}${view === 'week' ? '' : ' – Wochenansicht öffnen'}`;
+          if (wd === 0 || wd === 6) w.classList.add('weekend');
+          if (date === today) w.classList.add('today');
+          if (view !== 'week') w.classList.add('link');
+          if (view !== 'week') w.addEventListener('click', () => { cursor = new Date(yy, mm - 1, dd); setView('week'); });
+        }
+        cal.appendChild(w);
+      });
+
       state.persons.forEach((p, pi) => {
-        const row = baseRow + pi;
+        const r = wdRow + 1 + pi;
         const last = pi === 2 ? ' last' : '';
-        const pEl = el('div', 'person' + last, { gridRow: row });
-        const dot = el('i', null, { background: p.color });
-        pEl.append(dot, document.createTextNode(p.name));
+        const pEl = el('div', 'person' + last, { gridRow: r });
+        pEl.append(el('i', null, { background: p.color }), document.createTextNode(p.name));
         pEl.title = p.name;
         cal.appendChild(pEl);
 
-        for (let d = 1; d <= 31; d++) {
-          const c = el('div', 'day' + last, { gridColumn: d + 2, gridRow: row });
-          if (d > dim) {
+        band.days.forEach((date, i) => {
+          const c = el('div', 'day' + last, { gridColumn: i + 3, gridRow: r });
+          if (!date) {
             c.classList.add('invalid');
           } else {
-            const date = iso(year, m, d);
-            const wd = new Date(year, m, d).getDay();
+            const [yy, mm, dd] = date.split('-').map(Number);
+            const wd = new Date(yy, mm - 1, dd).getDay();
             if (wd === 0 || wd === 6) c.classList.add('weekend');
             if (date === today) c.classList.add('today');
             c.addEventListener('click', () => openEntry(null, { from: date, to: date, persons: [p.id] }));
           }
           cal.appendChild(c);
-        }
-        renderBars(m, dim, p, row);
+        });
+        renderBars(band.days, p, r, single);
       });
-    }
+      row += 4;
+    });
   }
 
-  // Balken einer Person in einem Monat; überlappende Einträge werden in Spuren gestapelt.
-  function renderBars(m, dim, person, row) {
-    const mStart = iso(year, m, 1), mEnd = iso(year, m, dim);
+  // Balken einer Person in einem Band; überlappende Einträge werden in Spuren gestapelt.
+  function renderBars(days, person, row, showRange) {
+    const valid = days.filter(Boolean);
+    const first = valid[0], last = valid[valid.length - 1];
     const items = state.entries
-      .filter(e => e.persons.includes(person.id) && e.from <= mEnd && e.to >= mStart)
+      .filter(e => e.persons.includes(person.id) && e.from <= last && e.to >= first)
       .sort((a, b) => a.from.localeCompare(b.from) || b.to.localeCompare(a.to));
     if (!items.length) return;
 
-    const lanes = []; // je Spur: letzter belegter Tag
+    const lanes = []; // je Spur: letzte belegte Spalte
     const placed = items.map(e => {
-      const s = e.from < mStart ? 1 : +e.from.slice(8);
-      const t = e.to > mEnd ? dim : +e.to.slice(8);
-      let lane = lanes.findIndex(endDay => endDay < s);
+      const s = days.findIndex(d => d && d >= e.from);
+      let t = s;
+      days.forEach((d, i) => { if (d && d <= e.to) t = i; });
+      let lane = lanes.findIndex(endCol => endCol < s);
       if (lane === -1) { lane = lanes.length; lanes.push(t); } else lanes[lane] = t;
-      return { e, s, t, lane, contL: e.from < mStart, contR: e.to > mEnd };
+      return { e, s, t, lane, contL: e.from < first, contR: e.to > last };
     });
     const n = lanes.length;
 
     placed.forEach(({ e, s, t, lane, contL, contR }) => {
       const b = el('div', 'bar', {
-        gridColumn: `${s + 2} / ${t + 3}`,
+        gridColumn: `${s + 3} / ${t + 4}`,
         gridRow: row,
         background: e.color,
         color: textColorFor(e.color),
@@ -410,11 +502,31 @@
       if (contL) b.classList.add('cont-left');
       if (contR) b.classList.add('cont-right');
       b.textContent = e.label;
+      if (showRange) {
+        const r = el('span', 'range');
+        r.textContent = e.from === e.to ? fmt(e.from) : `${fmt(e.from)} – ${fmt(e.to)}`;
+        b.appendChild(r);
+      }
       const names = e.persons.map(id => personById(id)?.name).filter(Boolean).join(', ');
       b.title = `${e.label}\n${fmt(e.from)} – ${fmt(e.to)}\n${names}`;
       b.addEventListener('click', ev => { ev.stopPropagation(); openEntry(e); });
       cal.appendChild(b);
     });
+  }
+
+  function setView(v) {
+    view = v;
+    try { localStorage.setItem(VIEW_KEY, v); } catch (e) { /* egal */ }
+    render();
+  }
+
+  function step(dir) {
+    const y = cursor.getFullYear(), m = cursor.getMonth();
+    if (view === 'year') cursor = new Date(y + dir, m, 1);
+    else if (view === 'half') cursor = new Date(y, (m < 6 ? 0 : 6) + 6 * dir, 1);
+    else if (view === 'month') cursor = new Date(y, m + dir, 1);
+    else cursor = addDays(cursor, 7 * dir);
+    render();
   }
 
   function renderLegend() {
@@ -568,9 +680,17 @@
   });
 
   // ---------- Kopfzeile ----------
-  document.getElementById('prevYear').addEventListener('click', () => { year--; render(); });
-  document.getElementById('nextYear').addEventListener('click', () => { year++; render(); });
-  document.getElementById('todayBtn').addEventListener('click', () => { year = new Date().getFullYear(); render(); });
+  document.getElementById('prevYear').addEventListener('click', () => step(-1));
+  document.getElementById('nextYear').addEventListener('click', () => step(1));
+  document.getElementById('todayBtn').addEventListener('click', () => { cursor = startOfDay(new Date()); render(); });
+  document.querySelectorAll('#viewSwitch button').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+  const KEYS = { w: 'week', m: 'month', h: 'half', j: 'year' };
+  document.addEventListener('keydown', e => {
+    if (document.querySelector('dialog[open]') || e.target.matches('input')) return;
+    if (e.key === 'ArrowLeft') step(-1);
+    else if (e.key === 'ArrowRight') step(1);
+    else if (!e.ctrlKey && !e.metaKey && !e.altKey && KEYS[e.key]) setView(KEYS[e.key]);
+  });
   document.getElementById('addBtn').addEventListener('click', () => openEntry(null, { persons: [] }));
   document.getElementById('fullscreenBtn').addEventListener('click', () => {
     if (document.fullscreenElement) document.exitFullscreen();
@@ -582,7 +702,7 @@
   setInterval(() => {
     const t = todayIso();
     if (t !== lastDay) {
-      if (year === +lastDay.slice(0, 4)) year = +t.slice(0, 4);
+      if (toIso(cursor) === lastDay) cursor = startOfDay(new Date()); // Ansicht läuft mit
       lastDay = t;
       render();
     }

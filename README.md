@@ -88,6 +88,9 @@ Keine Installation, kein Server.
 
 - **Jahresansicht** auf einem Bildschirm: 12 Monate × 3 Personen, Spalten = Tage 1–31, pro Monat eine Zeile mit den Wochentagen (Mo–So),
   Wochenenden grau, heutiger Tag rot umrandet, Jahr mit ◀ ▶ wechseln.
+- **Ansichten** oben links umschalten: **Woche**, **Monat**, **Halbjahr**, **Jahr** (auch per Taste
+  `W`/`M`/`H`/`J`, blättern mit ◀ ▶ oder den Pfeiltasten). Klick auf einen Monatsnamen öffnet die
+  Monatsansicht, Klick auf einen Wochentag die Wochenansicht. Die gewählte Ansicht bleibt gespeichert.
 - **Einträge** mit Bezeichnung, Zeitraum *von – bis*, Farbe (Palette oder eigene Farbe) und
   einer oder mehreren Personen. Anlegen über „+ Eintrag“ oder Klick auf einen Tag;
   Klick auf einen Balken zum Bearbeiten/Löschen. Überlappende Einträge werden gestapelt.
