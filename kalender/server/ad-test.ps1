@@ -93,11 +93,19 @@ $ok = Step 'Computer ist Mitglied einer Domäne' {
 $dc = $AdServer
 if ($ok) {
   Step 'Domänencontroller gefunden (über DNS)' {
-    $o = & nltest.exe "/dsgetdc:$($script:cs.Domain)" 2>&1
+    $o = @(& nltest.exe "/dsgetdc:$($script:cs.Domain)" 2>&1 | ForEach-Object { [string]$_ })
     if ($LASTEXITCODE -ne 0) { throw ($o -join ' ') }
-    $found = (($o | Where-Object { $_ -match '^\s*DC:' }) -replace '^\s*DC:\s*\\*', '').Trim()
+    $line = @($o | Where-Object { $_ -match '^\s*DC:\s*\\\\' })[0]
+    if (-not $line) { throw ('Kein DC in der Antwort: ' + ($o -join ' ')) }
+    $found = ([string]$line -replace '^\s*DC:\s*\\*', '').Trim()
+    $addr = @($o | Where-Object { $_ -match '^\s*Address:' })[0]
     if (-not $script:dc) { $script:dc = $found }
-    $found
+    $found + $(if ($addr) { ', ' + ([string]$addr -replace '^\s*Address:\s*\\*', '').Trim() } else { '' })
+  } | Out-Null
+  Step 'DNS-Auflösung des Domänennamens' {
+    $ips = @([Net.Dns]::GetHostAddresses($script:cs.Domain) | ForEach-Object { $_.IPAddressToString })
+    if (-not $ips) { throw "Keine Adresse für $($script:cs.Domain)" }
+    $ips -join ', '
   } | Out-Null
   Step 'Sicherer Kanal zur Domäne' {
     if (-not (Test-ComputerSecureChannel)) { throw 'Vertrauensstellung des Computers zur Domäne gestört (Test-ComputerSecureChannel = False).' }
@@ -105,6 +113,7 @@ if ($ok) {
   } | Out-Null
 }
 # Erreicht der Kalender-Server den Domänencontroller über die nötigen Ports?
+if (-not $dc -and $cs) { $dc = $cs.Domain }   # ohne gefundenen DC: Domänenname selbst prüfen
 if ($dc) {
   foreach ($port in @(@{ p = 389; n = 'LDAP' }, @{ p = 88; n = 'Kerberos' }, @{ p = 445; n = 'SMB' }, @{ p = 3268; n = 'Globaler Katalog' })) {
     Step ("Port {0} ({1}) zu {2}" -f $port.p, $port.n, $dc) {
