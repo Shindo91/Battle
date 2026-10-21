@@ -244,6 +244,9 @@
   }
   .swatch.sel { border-color: var(--text); box-shadow: 0 0 0 2px var(--panel) inset; }
   input[type=color] { width: 36px; height: 30px; border: none; padding: 0; background: none; cursor: pointer; }
+  .quick { display: flex; gap: 6px; flex-wrap: wrap; }
+  .quick button { flex: 1; padding: 5px 8px; font-size: .9rem; }
+  .quick button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
   .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
   .actions .left { margin-right: auto; }
   .err { color: var(--danger); font-size: .9rem; min-height: 1.2em; }
@@ -301,6 +304,14 @@
       <div>
         <label class="cap" for="fTo">Bis</label>
         <input type="date" id="fTo" required>
+      </div>
+    </div>
+    <div class="row">
+      <div class="quick" id="fQuick">
+        <button type="button" data-weeks="1">1 Woche</button>
+        <button type="button" data-weeks="2">2 Wochen</button>
+        <button type="button" data-weeks="3">3 Wochen</button>
+        <button type="button" data-weeks="4">4 Wochen</button>
       </div>
     </div>
     <div class="row">
@@ -775,11 +786,35 @@
     }));
     fError.textContent = '';
     renderSwatches();
+    prevFrom = fFrom.value;
+    markQuick();
     dlg.showModal();
     fLabel.focus();
   }
 
-  fFrom.addEventListener('change', () => { if (!fTo.value || fTo.value < fFrom.value) fTo.value = fFrom.value; });
+  // Schnellauswahl: Bis = Von + n Wochen − 1 Tag (z. B. Mo bis So)
+  const fQuick = document.getElementById('fQuick');
+  const plusWeeks = (from, n) => { const [y, m, d] = from.split('-').map(Number); return toIso(new Date(y, m - 1, d + 7 * n - 1)); };
+  function markQuick() {
+    fQuick.querySelectorAll('button').forEach(b =>
+      b.classList.toggle('active', !!fFrom.value && fTo.value === plusWeeks(fFrom.value, +b.dataset.weeks)));
+  }
+  fQuick.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    if (!fFrom.value) fFrom.value = todayIso();
+    fTo.value = plusWeeks(fFrom.value, +b.dataset.weeks);
+    markQuick();
+  }));
+  let prevFrom = '';
+  fFrom.addEventListener('focus', () => { prevFrom = fFrom.value; });
+  fFrom.addEventListener('change', () => {
+    // war eine Wochen-Dauer gewählt, wandert "Bis" mit
+    const weeks = prevFrom && [1, 2, 3, 4].find(n => fTo.value === plusWeeks(prevFrom, n));
+    if (weeks && fFrom.value) fTo.value = plusWeeks(fFrom.value, weeks);
+    else if (!fTo.value || fTo.value < fFrom.value) fTo.value = fFrom.value;
+    prevFrom = fFrom.value;
+    markQuick();
+  });
+  fTo.addEventListener('change', markQuick);
 
   document.getElementById('entryForm').addEventListener('submit', ev => {
     const persons = [...fPersons.querySelectorAll('input:checked')].map(c => c.value);
