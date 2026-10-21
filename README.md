@@ -123,5 +123,5 @@ Keine Installation, kein Server.
   keine Installation) liefert den Kalender aus und speichert zentral. Admin legt Benutzer an und vergibt je
   Person *sehen*/*bearbeiten*; Benutzer ändern ihr Passwort selbst, der Admin kann es zurücksetzen.
   Der Monitor (z. B. ThinPro-Kiosk) meldet sich über einen geheimen Anzeige-Link an und aktualisiert sich
-  automatisch. Neue Versionen aus diesem Repository spielt `aktualisieren.ps1` auf Befehl
-  (mit Anzeige der Version und Rückfrage) ein. Einrichtung: [`kalender/server/ANLEITUNG.md`](kalender/server/ANLEITUNG.md).
+  automatisch. Neue Versionen aus diesem Repository spielt `vom-pc-aktualisieren.ps1` vom Arbeitsplatz aus auf
+  Befehl ein (mit Anzeige der Version und Rückfrage) – der Server selbst braucht kein Internet. Einrichtung: [`kalender/server/ANLEITUNG.md`](kalender/server/ANLEITUNG.md).

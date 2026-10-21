@@ -47,31 +47,40 @@ gelöscht, sobald der Admin sein Passwort geändert hat.
 Test vom Arbeitsplatz: `http://SERVERNAME:8080/` öffnen → mit `admin` und dem Passwort anmelden →
 eigenes Passwort vergeben.
 
-### Updates aus GitHub – nur auf Befehl
+### Updates – nur auf Befehl
 
-Neue Versionen holt sich der Server **nur, wenn du es anstößt** – nie automatisch:
+Neue Versionen werden **nur eingespielt, wenn du es anstößt**. Es gibt zwei Wege:
+
+**A) Server ohne Internet (Normalfall): vom Arbeitsplatz-PC aus**
+
+`vom-pc-aktualisieren.ps1` einmal von GitHub auf den PC laden (z. B. nach `C:\Kalender-Update`), dann:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File C:\Kalender-Update\vom-pc-aktualisieren.ps1 -Server GASWP003010
+```
+
+1. zeigt die neueste Version (Commit, Beschreibung, Autor, Datum, Link zu den Änderungen),
+2. lädt die Dateien aus genau diesem Commit und prüft sie,
+3. vergleicht mit dem Server, listet die Änderungen und fragt **„Jetzt aktualisieren? (J/N)“**,
+4. kopiert sie nach `\\GASWP003010\C$\Kalender\neu` und spielt sie per PowerShell-Remoting ein
+   (Sicherung nach `daten\backup\code-<Datum>`, Austausch, ggf. Server-Neustart).
+   Klappt der Fernzugriff nicht, zeigt das Skript den einen Befehl, den du auf dem Server eingibst.
+
+Voraussetzungen: Der PC kommt ins Internet; dein Windows-Konto ist Administrator auf dem Server
+(sonst `-Credential (Get-Credential DOMÄNE\admin)` anhängen). Weitere Optionen: `-Version <Commit>`,
+`-Pfad D:\Kalender`, `-Ja` (ohne Rückfrage).
+
+**B) Server mit Internetzugang:** direkt auf dem Server
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File C:\Kalender\aktualisieren.ps1
 ```
 
-Das Skript
-1. zeigt die neueste Version des Branches (Commit, Beschreibung, Autor, Datum, Link zu den Änderungen),
-2. lädt alle Dateien genau aus diesem Commit und prüft sie (vollständig, PowerShell-Syntax fehlerfrei),
-3. listet, welche Dateien sich ändern würden, und fragt **„Jetzt aktualisieren? (J/N)“**,
-4. sichert die alten Dateien nach `daten\backup\code-<Datum>`, ersetzt sie und startet den Server neu,
-   falls sich das Server-Skript geändert hat. Eine neue Seite laden alle Browser und der Monitor selbst nach.
+(gleiche Anzeige und Rückfrage; Optionen `-Version`, `-Ja`, `-Proxy http://proxy:8080`).
 
-| Wunsch | Befehl |
-|---|---|
-| Bestimmte Version (Commit) einspielen | `aktualisieren.ps1 -Version 3d93795` |
-| Ohne Rückfrage | `aktualisieren.ps1 -Ja` |
-| Anderer Branch | `aktualisieren.ps1 -Branch main` |
-| Über Proxy | `aktualisieren.ps1 -Proxy http://proxy:8080` |
-
-Die Kalenderdaten (`daten`) werden nie verändert. Die installierte Version steht in
-`daten\installierte-version.txt`, das Protokoll in `daten\update.log`. Der Server braucht dafür
-Zugriff auf `https://api.github.com` und `https://raw.githubusercontent.com`.
+In beiden Fällen bleiben die Kalenderdaten (`daten`) unverändert. Installierte Version:
+`daten\installierte-version.txt`, Protokoll: `daten\update.log`. Eine neue Seite laden alle Browser
+und der Monitor selbst nach.
 
 ## 3. Kalender einrichten (im Browser als admin)
 
@@ -118,7 +127,7 @@ Link funktioniert dann sofort nicht mehr.
 | Protokoll | `C:\Kalender\daten\server.log` |
 | Daten | `C:\Kalender\daten\kalender.json`, `benutzer.json` |
 | Sicherungen | `C:\Kalender\daten\backup\` – täglich, 60 Tage aufbewahrt. Den Ordner `daten` zusätzlich in die normale Server-Sicherung aufnehmen. |
-| Update | `aktualisieren.ps1` (siehe oben). Oder von Hand: neue `index.html` hineinkopieren genügt (Browser laden selbst neu); bei neuer `kalender-server.ps1` zusätzlich Server neu starten |
+| Update | `vom-pc-aktualisieren.ps1` am PC (siehe oben). Oder von Hand: neue `index.html` hineinkopieren genügt (Browser laden selbst neu); bei neuer `kalender-server.ps1` zusätzlich Server neu starten |
 | Update zurücknehmen | Dateien aus `daten\backup\code-<Datum>` zurückkopieren, Server neu starten |
 | Admin-Passwort vergessen | `powershell -ExecutionPolicy Bypass -File C:\Kalender\kalender-server.ps1 -ResetAdmin` → neues Passwort in `ERSTES-ADMIN-PASSWORT.txt` |
 | Anderer Port | `installieren.ps1 -Port 8090` erneut ausführen |
