@@ -430,6 +430,9 @@ function Read-Body($req) {
   try { return (ConvertFrom-Json $text) } catch { throw (New-HttpError 400 'Ungültige Daten.') }
 }
 
+# Stand der Seite (index.html): ändert er sich, laden die Browser die Seite neu
+function Get-AppVersion { return [string](Get-Item (Join-Path $WebRoot 'index.html')).LastWriteTimeUtc.Ticks }
+
 # Kalenderdaten, gefiltert auf das, was der Benutzer sehen darf
 function Get-CalendarView($user) {
   $persons = New-Object System.Collections.ArrayList
@@ -452,7 +455,7 @@ function Get-CalendarView($user) {
     $m = @($g.members | Where-Object { (Get-Perm $user $_) -ne 'none' })
     if ($m.Count -gt 0) { [void]$groups.Add([ordered]@{ id = $g.id; name = $g.name; members = $m }) }
   }
-  return [ordered]@{ version = $script:Version; holidayRegion = $script:Region; persons = $persons
+  return [ordered]@{ version = $script:Version; app = (Get-AppVersion); holidayRegion = $script:Region; persons = $persons
                      categories = $script:Categories; groups = $groups; entries = $entries }
 }
 
@@ -559,7 +562,7 @@ function Invoke-Request($ctx) {
   # ---- Kalender lesen
   if ($path -eq '/api/data' -and $method -eq 'GET') {
     $since = $req.QueryString['v']
-    if ($since -and $since -eq [string]$script:Version) { Send-Json $ctx 200 @{ unchanged = $true; version = $script:Version } $null; return }
+    if ($since -and $since -eq [string]$script:Version) { Send-Json $ctx 200 @{ unchanged = $true; version = $script:Version; app = (Get-AppVersion) } $null; return }
     Send-Json $ctx 200 (Get-CalendarView $user) $null
     return
   }

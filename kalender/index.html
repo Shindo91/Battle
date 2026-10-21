@@ -1967,6 +1967,7 @@
   function applyData(d) {
     state = normalize({ persons: d.persons, categories: d.categories, groups: d.groups, entries: d.entries, holidayRegion: d.holidayRegion });
     dataVersion = d.version;
+    appVersion = appVersion || d.app;
     holidayCache.clear();
     render();
   }
@@ -1975,11 +1976,14 @@
     applyData(await api('GET', '/api/data'));
   }
   const offlineEl = document.getElementById('offline');
+  let appVersion = null; // Stand der Seite beim Laden; ändert er sich, wurde ein Update eingespielt
   setInterval(async () => {
     if (!SERVER || !me || me.mustChange || drag || barDrag) return;
     try {
       const d = await api('GET', `/api/data?v=${dataVersion}`);
       offlineEl.hidden = true;
+      if (appVersion && d.app && d.app !== appVersion && !document.querySelector('dialog[open]')) { location.reload(); return; }
+      appVersion = appVersion || d.app;
       if (!d.unchanged) applyData(d);
     } catch (e) {
       if (e.status === 0) offlineEl.hidden = false;

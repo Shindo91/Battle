@@ -22,6 +22,7 @@ Alle drei Dateien in **einen Ordner**, z. B. `C:\Kalender`:
 C:\Kalender\index.html
 C:\Kalender\kalender-server.ps1
 C:\Kalender\installieren.ps1
+C:\Kalender\aktualisieren.ps1
 ```
 
 (Alternativ dürfen die beiden Skripte auch in einem Unterordner `server` liegen. Die Daten landen
@@ -45,6 +46,28 @@ gelöscht, sobald der Admin sein Passwort geändert hat.
 
 Test vom Arbeitsplatz: `http://SERVERNAME:8080/` öffnen → mit `admin` und dem Passwort anmelden →
 eigenes Passwort vergeben.
+
+### Automatische Updates aus GitHub (empfohlen)
+
+Statt neue Versionen von Hand zu kopieren, holt sich der Server sie selbst aus dem Repository
+(`https://github.com/Shindo91/Battle`, öffentlich – keine Zugangsdaten nötig, kein Git auf dem Server):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File C:\Kalender\installieren.ps1 -Port 8080 -AutoUpdate -Branch main
+```
+
+- Legt zusätzlich die Aufgabe **„Kalender-Update“** an: täglich um 03:00 (`-UpdateUhrzeit 05:30` zum Ändern).
+- **Sofort aktualisieren:** `Start-ScheduledTask Kalender-Update` – oder direkt
+  `powershell -ExecutionPolicy Bypass -File C:\Kalender\aktualisieren.ps1 -Branch main`
+- Ablauf: alle Dateien laden → prüfen (vollständig, PowerShell-Syntax fehlerfrei) → nur bei Erfolg ersetzen.
+  Alte Versionen landen in `daten\backup\code-<Datum>`. Hat sich das Server-Skript geändert, startet der
+  Server neu; eine neue Seite laden alle Browser und der Monitor innerhalb von ~20 Sekunden von selbst.
+- Die Kalenderdaten (`daten`) werden dabei nie verändert. Protokoll: `daten\update.log`.
+- Der Server braucht Zugriff auf `https://raw.githubusercontent.com`. Bei einem Proxy: `-Proxy http://proxy:8080`.
+- Solange die Änderungen noch nicht im Branch `main` sind, den Arbeits-Branch angeben, z. B.
+  `-Branch claude/nifty-curie-guwnkh`.
+- **Wichtig:** Damit läuft Code aus dem Repository auf dem Server (als SYSTEM). Schreibrechte auf das
+  Repository daher nur vertrauenswürdigen Personen geben; `main` am besten nur über geprüfte Pull Requests ändern.
 
 ## 3. Kalender einrichten (im Browser als admin)
 
@@ -91,10 +114,11 @@ Link funktioniert dann sofort nicht mehr.
 | Protokoll | `C:\Kalender\daten\server.log` |
 | Daten | `C:\Kalender\daten\kalender.json`, `benutzer.json` |
 | Sicherungen | `C:\Kalender\daten\backup\` – täglich, 60 Tage aufbewahrt. Den Ordner `daten` zusätzlich in die normale Server-Sicherung aufnehmen. |
-| Update | neue `index.html` / `kalender-server.ps1` hineinkopieren, dann Server neu starten |
+| Update | automatisch (siehe oben) oder `Start-ScheduledTask Kalender-Update`. Von Hand: neue `index.html` hineinkopieren genügt (Browser laden selbst neu); bei neuer `kalender-server.ps1` zusätzlich Server neu starten |
+| Update zurücknehmen | Dateien aus `daten\backup\code-<Datum>` zurückkopieren, Server neu starten |
 | Admin-Passwort vergessen | `powershell -ExecutionPolicy Bypass -File C:\Kalender\kalender-server.ps1 -ResetAdmin` → neues Passwort in `ERSTES-ADMIN-PASSWORT.txt` |
 | Anderer Port | `installieren.ps1 -Port 8090` erneut ausführen |
-| Entfernen | `installieren.ps1 -Entfernen` (Daten bleiben erhalten) |
+| Entfernen | `installieren.ps1 -Entfernen` (Daten bleiben erhalten; entfernt auch die Update-Aufgabe) |
 
 ## 6. Sicherheit
 
