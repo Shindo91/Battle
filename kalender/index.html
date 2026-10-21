@@ -16,6 +16,32 @@
     --holiday-text: #be123c;
     --today: #e11d48;
     --accent: #2563eb;
+    --strong-line: #c9ced6;
+    --hover: #dbeafe;
+    --wd-bg: #fafbfc;
+    --invalid-a: #f3f4f6;
+    --invalid-b: #e5e7eb;
+    --input-border: #cbd0d8;
+    --danger: #b91c1c;
+    --danger-border: #fca5a5;
+    color-scheme: light;
+  }
+  /* Dunkles Design: automatisch nach Systemeinstellung oder fest per Umschalter */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1116; --panel: #171b22; --text: #e6e8ec; --muted: #9aa3b2; --line: #2a303a;
+      --weekend: #1f242d; --holiday: #3b1a24; --holiday-text: #fb7185; --today: #f43f5e; --accent: #3b82f6;
+      --strong-line: #3d4552; --hover: #1e3a5f; --wd-bg: #1b2028; --invalid-a: #13171d; --invalid-b: #1b2028;
+      --input-border: #3d4552; --danger: #f87171; --danger-border: #7f1d1d;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1116; --panel: #171b22; --text: #e6e8ec; --muted: #9aa3b2; --line: #2a303a;
+    --weekend: #1f242d; --holiday: #3b1a24; --holiday-text: #fb7185; --today: #f43f5e; --accent: #3b82f6;
+    --strong-line: #3d4552; --hover: #1e3a5f; --wd-bg: #1b2028; --invalid-a: #13171d; --invalid-b: #1b2028;
+    --input-border: #3d4552; --danger: #f87171; --danger-border: #7f1d1d;
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
@@ -43,7 +69,7 @@
   .seg button { border-radius: 0; margin-left: -1px; }
   .seg button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
   .seg button:last-child { border-radius: 0 6px 6px 0; }
-  .seg button.active { background: var(--text); border-color: var(--text); color: #fff; }
+  .seg button.active { background: var(--text); border-color: var(--text); color: var(--panel); }
   .legend { display: flex; gap: 14px; margin-left: 12px; flex-wrap: wrap; }
   .legend span { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
   .legend i { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
@@ -60,7 +86,7 @@
   button:hover { background: var(--weekend); }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   button.primary:hover { filter: brightness(1.1); }
-  button.danger { color: #b91c1c; border-color: #fca5a5; }
+  button.danger { color: var(--danger); border-color: var(--danger-border); }
 
   /* Kalender-Raster: 12 Monate x 3 Personen, Spalten = Tage 1..31 */
   main { flex: 1; min-height: 0; padding: 8px 12px 12px; display: flex; }
@@ -90,21 +116,13 @@
   .view-week .person i, .view-month .person i { width: 12px; height: 12px; }
   .bar .range { font-weight: 400; opacity: .85; margin-left: .6em; font-size: .85em; }
   .view-week .bar { font-size: 1.05em; padding: 0 8px; }
-  .hd {
-    font-weight: 700;
-    color: var(--muted);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-bottom: 2px solid var(--line);
-  }
   .month {
     grid-column: 1;
     font-weight: 700;
     display: flex;
     align-items: center;
     padding-left: 8px;
-    border-bottom: 2px solid #c9ced6;
+    border-bottom: 2px solid var(--strong-line);
     font-size: 1.15em;
   }
   .person {
@@ -120,14 +138,14 @@
     color: var(--muted);
   }
   .person i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-  .person.last, .day.last { border-bottom: 2px solid #c9ced6; }
+  .person.last, .day.last { border-bottom: 2px solid var(--strong-line); }
   .day {
     border-bottom: 1px solid var(--line);
     border-right: 1px solid var(--line);
     cursor: pointer;
     position: relative;
   }
-  .day:hover { background: #dbeafe !important; }
+  .day:hover { background: var(--hover) !important; }
   .day.weekend { background: var(--weekend); }
   .day.holiday { background: var(--holiday); }
   .hlabel {
@@ -145,7 +163,7 @@
     overflow: hidden;
     hyphens: manual;
   }
-  .day.invalid { background: repeating-linear-gradient(45deg, #f3f4f6, #f3f4f6 3px, #e5e7eb 3px, #e5e7eb 6px); cursor: default; }
+  .day.invalid { background: repeating-linear-gradient(45deg, var(--invalid-a), var(--invalid-a) 3px, var(--invalid-b) 3px, var(--invalid-b) 6px); cursor: default; }
   .day.today { box-shadow: inset 0 0 0 2px var(--today); }
   .wd {
     display: flex;
@@ -155,7 +173,7 @@
     color: var(--muted);
     border-right: 1px solid var(--line);
     border-bottom: 1px solid var(--line);
-    background: #fafbfc;
+    background: var(--wd-bg);
     line-height: 1;
     white-space: nowrap;
     overflow: hidden;
@@ -165,7 +183,7 @@
   .wd.today { background: var(--today); color: #fff; font-weight: 700; }
   .wd .hname { font-size: .7em; font-weight: 600; max-width: 100%; padding: 0 2px; text-align: center; line-height: 1.1;
                overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; hyphens: auto; }
-  .wd.invalid { background: repeating-linear-gradient(45deg, #f3f4f6, #f3f4f6 3px, #e5e7eb 3px, #e5e7eb 6px); }
+  .wd.invalid { background: repeating-linear-gradient(45deg, var(--invalid-a), var(--invalid-a) 3px, var(--invalid-b) 3px, var(--invalid-b) 6px); }
 
   .bar {
     z-index: 2;
@@ -190,14 +208,17 @@
 
   /* Dialoge */
   dialog {
-    border: none;
     border-radius: 10px;
     padding: 20px 22px;
     width: min(440px, calc(100vw - 32px));
     box-shadow: 0 20px 50px rgba(0,0,0,.3);
     color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    max-height: calc(100vh - 32px);
+    overflow: auto;
   }
-  dialog::backdrop { background: rgba(15, 23, 42, .45); }
+  dialog::backdrop { background: rgba(0, 0, 0, .55); }
   dialog h2 { margin: 0 0 14px; font-size: 1.25rem; }
   form .row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
   form .row.inline { flex-direction: row; gap: 12px; }
@@ -206,9 +227,11 @@
   input[type=text], input[type=date], select {
     font: inherit;
     padding: 7px 9px;
-    border: 1px solid #cbd0d8;
+    border: 1px solid var(--input-border);
     border-radius: 6px;
     width: 100%;
+    background: var(--panel);
+    color: var(--text);
   }
   .persons { display: flex; gap: 14px; flex-wrap: wrap; }
   .persons label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
@@ -217,12 +240,17 @@
     width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
     border: 2px solid transparent; padding: 0;
   }
-  .swatch.sel { border-color: var(--text); box-shadow: 0 0 0 2px #fff inset; }
+  .swatch.sel { border-color: var(--text); box-shadow: 0 0 0 2px var(--panel) inset; }
   input[type=color] { width: 36px; height: 30px; border: none; padding: 0; background: none; cursor: pointer; }
   .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
   .actions .left { margin-right: auto; }
-  .err { color: #b91c1c; font-size: .9rem; min-height: 1.2em; }
+  .err { color: var(--danger); font-size: .9rem; min-height: 1.2em; }
   .settings-person { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .settings-person input[type=text] { flex: 1; }
+  .settings-person label { display: inline-flex; align-items: center; gap: 4px; font-size: .85rem; color: var(--muted); white-space: nowrap; cursor: pointer; }
+  .settings-person button { padding: 4px 9px; }
+  .legend span { cursor: pointer; user-select: none; }
+  .legend span.off { opacity: .4; text-decoration: line-through; }
 </style>
 </head>
 <body>
@@ -243,6 +271,7 @@
   <div class="spacer"></div>
   <button class="primary" id="addBtn">+ Eintrag</button>
   <button id="settingsBtn">Einstellungen</button>
+  <button id="themeBtn"></button>
   <button id="fullscreenBtn" title="Vollbild">⛶</button>
 </header>
 
@@ -288,8 +317,9 @@
   <form id="settingsForm" method="dialog">
     <h2>Einstellungen</h2>
     <div class="row">
-      <span class="cap">Personen</span>
+      <span class="cap">Personen (Häkchen = im Kalender anzeigen)</span>
       <div id="sPersons"></div>
+      <div><button type="button" id="sAddPerson">+ Person hinzufügen</button></div>
     </div>
     <div class="row">
       <label class="cap" for="sRegion">Feiertage</label>
@@ -336,7 +366,7 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const s = JSON.parse(raw);
-        if (Array.isArray(s.persons) && s.persons.length === 3 && Array.isArray(s.entries)) return s;
+        if (Array.isArray(s.persons) && s.persons.length && Array.isArray(s.entries)) return s;
       }
     } catch (e) { /* ignorieren, Standard verwenden */ }
     return structuredClone(DEFAULT_STATE);
@@ -496,28 +526,20 @@
     cal.className = 'view-' + view;
     const today = todayIso();
     const cols = bands[0].days.length;
+    const persons = visiblePersons();
+    const n = persons.length;
 
-    // Jahr/Halbjahr: Kopfzeile mit Tageszahlen, Monatsname links.
-    // Monat/Woche: Wochentag + Datum direkt in der Zeile über den Personen.
+    // Pro Band: Zeile mit Wochentag + Datum, darunter eine Zeile je sichtbarer Person.
+    // Jahr/Quartal/Halbjahr zusätzlich mit Monatsname links.
     cal.style.gridTemplateColumns = `${single ? '0' : '4.2rem'} ${single ? '8rem' : '5.5rem'} repeat(${cols}, minmax(0, 1fr))`;
-    cal.style.gridTemplateRows = (single ? '' : 'minmax(1.6em, auto) ') +
-      `repeat(${bands.length}, ${single ? '3.8em' : '1.4em'} minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr))`;
+    cal.style.gridTemplateRows =
+      `repeat(${bands.length}, ${single ? '3.8em' : '1.4em'} ${' minmax(0, 1fr)'.repeat(n)})`;
 
     let row = 1;
-    if (!single) {
-      cal.appendChild(el('div', 'hd', { gridColumn: '1 / 3', gridRow: 1 }));
-      for (let d = 1; d <= cols; d++) {
-        const h = el('div', 'hd', { gridColumn: d + 2, gridRow: 1 });
-        h.textContent = d;
-        cal.appendChild(h);
-      }
-      row = 2;
-    }
-
     bands.forEach(band => {
       const wdRow = row;
       if (!single) {
-        const mEl = el('div', 'month', { gridRow: `${wdRow} / span 4` });
+        const mEl = el('div', 'month', { gridRow: `${wdRow} / span ${n + 1}` });
         mEl.textContent = band.label;
         mEl.title = `${band.title} – Monatsansicht öffnen`;
         mEl.addEventListener('click', () => { cursor = new Date(band.year, band.month, 1); setView('month'); });
@@ -554,9 +576,9 @@
         cal.appendChild(w);
       });
 
-      state.persons.forEach((p, pi) => {
+      persons.forEach((p, pi) => {
         const r = wdRow + 1 + pi;
-        const last = pi === 2 ? ' last' : '';
+        const last = pi === n - 1 ? ' last' : '';
         const pEl = el('div', 'person' + last, { gridRow: r });
         pEl.append(el('i', null, { background: p.color }), document.createTextNode(p.name));
         pEl.title = p.name;
@@ -580,15 +602,15 @@
         renderBars(band.days, p, r, single);
       });
 
-      // Feiertagsname quer über die drei Personenzeilen (Monat/Woche: steht schon im Kopf)
+      // Feiertagsname quer über die Personenzeilen (Monat/Woche: steht schon im Kopf)
       if (!single) band.days.forEach((date, i) => {
         const hol = date && holidayName(date);
         if (!hol) return;
-        const l = el('div', 'hlabel', { gridColumn: i + 3, gridRow: `${wdRow + 1} / span 3` });
+        const l = el('div', 'hlabel', { gridColumn: i + 3, gridRow: `${wdRow + 1} / span ${n}` });
         l.textContent = HOLIDAY_SHORT[hol] || hol;
         cal.appendChild(l);
       });
-      row += 4;
+      row += n + 1;
     });
   }
 
@@ -657,8 +679,15 @@
   function renderLegend() {
     const lg = document.getElementById('legend');
     lg.replaceChildren(...state.persons.map(p => {
-      const s = el('span');
+      const s = el('span', p.hidden ? 'off' : '');
       s.append(el('i', null, { background: p.color }), document.createTextNode(p.name));
+      s.title = p.hidden ? 'Ausgeblendet – klicken zum Einblenden' : 'Klicken zum Ausblenden';
+      s.addEventListener('click', () => {
+        if (!p.hidden && visiblePersons().length === 1) return; // mindestens eine Person bleibt sichtbar
+        p.hidden = !p.hidden;
+        save();
+        render();
+      });
       return s;
     }));
   }
@@ -669,6 +698,8 @@
     return (0.299 * r + 0.587 * g + 0.114 * b) > 160 ? '#111827' : '#ffffff';
   }
   const personById = id => state.persons.find(p => p.id === id);
+  const visiblePersons = () => state.persons.filter(p => !p.hidden);
+  const newId = prefix => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
   // ---------- Eintrag-Dialog ----------
   const dlg = document.getElementById('entryDialog');
@@ -759,23 +790,57 @@
     const o = el('option'); o.value = k; o.textContent = v; return o;
   }));
 
-  document.getElementById('settingsBtn').addEventListener('click', () => {
-    sPersons.replaceChildren(...state.persons.map(p => {
+  // Personen werden in einer Arbeitskopie bearbeitet und erst beim Speichern übernommen.
+  let draft = [];
+
+  function renderDraft() {
+    sPersons.replaceChildren(...draft.map(p => {
       const row = el('div', 'settings-person');
-      const c = el('input'); c.type = 'color'; c.value = p.color; c.dataset.id = p.id; c.dataset.k = 'color';
-      const n = el('input'); n.type = 'text'; n.value = p.name; n.maxLength = 20; n.dataset.id = p.id; n.dataset.k = 'name';
-      row.append(c, n);
+      const c = el('input'); c.type = 'color'; c.value = p.color;
+      c.addEventListener('input', () => { p.color = c.value; });
+      const n = el('input'); n.type = 'text'; n.value = p.name; n.maxLength = 20;
+      n.addEventListener('input', () => { p.name = n.value; });
+      const vis = el('label'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = !p.hidden;
+      cb.addEventListener('change', () => { p.hidden = !cb.checked; });
+      vis.title = 'Im Kalender anzeigen'; vis.append(cb, 'anzeigen');
+      const del = el('button', 'danger'); del.type = 'button'; del.textContent = '✕'; del.title = 'Person entfernen';
+      del.disabled = draft.length === 1;
+      del.addEventListener('click', () => { draft = draft.filter(x => x !== p); renderDraft(); });
+      row.append(c, n, vis, del);
       return row;
     }));
+  }
+
+  document.getElementById('sAddPerson').addEventListener('click', () => {
+    const used = new Set(draft.map(p => p.color));
+    draft.push({ id: newId('p'), name: `Person ${draft.length + 1}`, color: PALETTE.find(c => !used.has(c)) || PALETTE[0] });
+    renderDraft();
+    sPersons.querySelector('.settings-person:last-child input[type=text]').select();
+  });
+
+  document.getElementById('settingsBtn').addEventListener('click', () => {
+    draft = structuredClone(state.persons);
+    renderDraft();
     sRegion.value = state.holidayRegion || 'DE';
     sDlg.showModal();
   });
-  document.getElementById('settingsForm').addEventListener('submit', () => {
-    sPersons.querySelectorAll('input').forEach(i => {
-      const p = personById(i.dataset.id);
-      const v = i.value.trim();
-      if (p && v) p[i.dataset.k] = v;
-    });
+  document.getElementById('settingsForm').addEventListener('submit', ev => {
+    const ids = new Set(draft.map(p => p.id));
+    const removed = state.persons.filter(p => !ids.has(p.id));
+    if (removed.length) {
+      const affected = state.entries.filter(e => e.persons.some(id => !ids.has(id))).length;
+      const names = removed.map(p => p.name).join(', ');
+      if (!confirm(`${names} entfernen?` + (affected ? `\n${affected} Eintrag/Einträge werden dabei angepasst bzw. gelöscht.` : ''))) {
+        ev.preventDefault();
+        return;
+      }
+      state.entries = state.entries
+        .map(e => ({ ...e, persons: e.persons.filter(id => ids.has(id)) }))
+        .filter(e => e.persons.length);
+    }
+    draft.forEach((p, i) => { p.name = p.name.trim() || `Person ${i + 1}`; });
+    if (draft.every(p => p.hidden)) draft[0].hidden = false; // mindestens eine Person bleibt sichtbar
+    state.persons = draft;
     state.holidayRegion = sRegion.value;
     holidayCache.clear();
     save();
@@ -798,7 +863,7 @@
     if (!file) return;
     try {
       const s = JSON.parse(await file.text());
-      if (!Array.isArray(s.persons) || s.persons.length !== 3 || !Array.isArray(s.entries)) throw new Error();
+      if (!Array.isArray(s.persons) || !s.persons.length || !Array.isArray(s.entries)) throw new Error();
       if (!confirm('Aktuelle Daten durch die importierte Datei ersetzen?')) return;
       state = s;
       holidayCache.clear();
@@ -825,6 +890,26 @@
     else if (!e.ctrlKey && !e.metaKey && !e.altKey && KEYS[e.key]) setView(KEYS[e.key]);
   });
   document.getElementById('addBtn').addEventListener('click', () => openEntry(null, { persons: [] }));
+  // Design: auto (System) → hell → dunkel; gilt nur für diesen Browser
+  const THEME_KEY = 'jahreskalender.theme';
+  const THEMES = { auto: ['Auto', 'Design: automatisch wie das System – klicken für Hell'],
+                   light: ['☀ Hell', 'Design: hell – klicken für Dunkel'],
+                   dark: ['☾ Dunkel', 'Design: dunkel – klicken für Automatisch'] };
+  const themeBtn = document.getElementById('themeBtn');
+  let theme = 'auto';
+  try { const t = localStorage.getItem(THEME_KEY); if (THEMES[t]) theme = t; } catch (e) { /* egal */ }
+  function applyTheme() {
+    if (theme === 'auto') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = theme;
+    [themeBtn.textContent, themeBtn.title] = THEMES[theme];
+  }
+  themeBtn.addEventListener('click', () => {
+    theme = { auto: 'light', light: 'dark', dark: 'auto' }[theme];
+    try { localStorage.setItem(THEME_KEY, theme); } catch (e) { /* egal */ }
+    applyTheme();
+  });
+  applyTheme();
+
   document.getElementById('fullscreenBtn').addEventListener('click', () => {
     if (document.fullscreenElement) document.exitFullscreen();
     else document.documentElement.requestFullscreen?.();

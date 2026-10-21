@@ -86,16 +86,19 @@ Eigenständiger Jahreskalender für einen Monitor – unabhängig vom Spiel. Ein
 `kalender/index.html` im Browser öffnen (z. B. Chrome/Edge im Vollbild mit `F11` bzw. dem ⛶-Button).
 Keine Installation, kein Server.
 
-- **Jahresansicht** auf einem Bildschirm: 12 Monate × 3 Personen, Spalten = Tage 1–31, pro Monat eine Zeile mit Wochentag und Datum (z. B. „Do 01.01.“),
-  Wochenenden grau, heutiger Tag rot umrandet, Jahr mit ◀ ▶ wechseln.
+- **Jahresansicht** auf einem Bildschirm: 12 Monate untereinander, je Monat eine Zeile mit Wochentag
+  und Datum (z. B. „Do 01.01.“) und darunter eine Zeile pro Person. Wochenenden grau, heutiger Tag rot.
 - **Ansichten** oben links umschalten: **Woche**, **Monat**, **Quartal**, **Halbjahr**, **Jahr** (auch per
   Taste `W`/`M`/`Q`/`H`/`J`, blättern mit ◀ ▶ oder den Pfeiltasten). Klick auf einen Monatsnamen öffnet die
   Monatsansicht, Klick auf einen Wochentag die Wochenansicht. Die gewählte Ansicht bleibt gespeichert.
 - **Einträge** mit Bezeichnung, Zeitraum *von – bis*, Farbe (Palette oder eigene Farbe) und
   einer oder mehreren Personen. Anlegen über „+ Eintrag“ oder Klick auf einen Tag;
   Klick auf einen Balken zum Bearbeiten/Löschen. Überlappende Einträge werden gestapelt.
-- **Feiertage** (Deutschland) werden rosa markiert und mit Namen beschriftet (in Jahr/Halbjahr in der Tagesspalte, in Monats- und
+- **Feiertage** (Deutschland) werden rosa markiert und mit Namen beschriftet (in Jahr/Halbjahr/Quartal in der Tagesspalte, in Monats- und
   Wochenansicht unter dem Datum). Bundesland in den Einstellungen wählbar; wird für jedes Jahr automatisch berechnet.
-- **Einstellungen**: Namen und Farben der 3 Personen, Bundesland für Feiertage, Export/Import der Daten als JSON.
+- **Personen**: beliebig viele (Standard 3). In den Einstellungen hinzufügen, umbenennen, Farbe ändern,
+  entfernen oder per Häkchen ausblenden. Schnell aus-/einblenden durch Klick auf den Namen oben in der Kopfzeile.
+- **Hell/Dunkel**: Button in der Kopfzeile schaltet zwischen *Auto* (wie System), *Hell* und *Dunkel*.
+- **Einstellungen**: Personen, Bundesland für Feiertage, Export/Import der Daten als JSON.
 - Daten werden im Browser (`localStorage`) gespeichert – per Export/Import auf einen anderen
   Rechner übertragbar.
