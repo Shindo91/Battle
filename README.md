@@ -115,5 +115,9 @@ Keine Installation, kein Server.
   rechts oder von oben nach unten (Monate bzw. Personen dann als Spalten). Wird pro Browser gemerkt.
 - **Hell/Dunkel**: Button in der Kopfzeile schaltet zwischen *Auto* (wie System), *Hell* und *Dunkel*.
 - **Einstellungen**: Personen, Kategorien, Inaktivität, Bundesland für Feiertage, Export/Import als JSON.
-- Daten werden im Browser (`localStorage`) gespeichert – per Export/Import auf einen anderen
-  Rechner übertragbar.
+- **Einzelplatz**: `index.html` direkt öffnen – Daten liegen im Browser (`localStorage`), Export/Import als JSON.
+- **Intranet mit Benutzern**: `kalender/server/kalender-server.ps1` (Windows PowerShell 5.1, auch Server Core,
+  keine Installation) liefert den Kalender aus und speichert zentral. Admin legt Benutzer an und vergibt je
+  Person *sehen*/*bearbeiten*; Benutzer ändern ihr Passwort selbst, der Admin kann es zurücksetzen.
+  Der Monitor (z. B. ThinPro-Kiosk) meldet sich über einen geheimen Anzeige-Link an und aktualisiert sich
+  automatisch. Einrichtung: [`kalender/server/ANLEITUNG.md`](kalender/server/ANLEITUNG.md).

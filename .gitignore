@@ -11,3 +11,6 @@
 *.jks
 *.keystore
 keystore.properties
+
+# Kalender-Server: Daten (Benutzer, Passwort-Hashes, Einträge) gehören nicht ins Repository
+kalender/server/daten/

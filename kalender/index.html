@@ -231,7 +231,8 @@
   form .row.inline { flex-direction: row; gap: 12px; }
   form .row.inline > div { flex: 1; display: flex; flex-direction: column; gap: 4px; }
   .cap { font-size: .85rem; font-weight: 600; color: var(--muted); }
-  input[type=text], input[type=date], input.num, select {
+  [hidden] { display: none !important; }
+  input[type=text], input[type=password], input[type=date], input.num, select {
     font: inherit;
     padding: 7px 9px;
     border: 1px solid var(--input-border);
@@ -295,6 +296,26 @@
   #calendar.vertical .bar::before, #calendar.vertical .bar::after { left: 0; right: 0; width: auto; height: 7px; cursor: ns-resize; }
   #calendar.vertical .bar::before { top: 0; bottom: auto; }
   #calendar.vertical .bar::after { bottom: 0; top: auto; }
+
+
+  /* Anmeldung / Benutzerverwaltung */
+  body.locked main, body.locked footer, body.locked header > :not(h1) { visibility: hidden; }
+  .btnrow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .btnrow input[type=text], .btnrow select { width: auto; flex: 1; min-width: 9em; }
+  dialog.wide { width: min(1100px, calc(100vw - 32px)); }
+  .users-wrap { overflow: auto; max-height: 55vh; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 6px; }
+  #usersTable { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  #usersTable th, #usersTable td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  #usersTable th { position: sticky; top: 0; background: var(--wd-bg); font-weight: 600; }
+  #usersTable select { width: auto; padding: 3px 6px; }
+  #usersTable td.acts { display: flex; gap: 4px; }
+  #usersTable td.acts button { padding: 3px 8px; font-size: .85rem; }
+  #usersTable .muted { color: var(--muted); }
+  #usersTable input.link { width: 11em; padding: 3px 6px; font-size: .8rem; }
+  #usersMsg { min-height: 1.3em; }
+  #usersMsg.err { color: var(--danger); }
+  .offline { background: var(--warn-bg); color: var(--warn-text); padding: 2px 10px; border-radius: 4px; font-weight: 700; white-space: nowrap; }
+  .empty-note { grid-column: 1 / -1; grid-row: 1 / -1; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 1.2rem; padding: 2em; text-align: center; }
 
   /* Info-Leiste unten */
   footer#info {
@@ -392,8 +413,74 @@
     <div class="info-line" id="infoToday"></div>
     <div class="info-line" id="infoNext"></div>
   </div>
+  <div class="offline" id="offline" hidden>⚠ Keine Verbindung zum Server – angezeigt wird der letzte Stand</div>
   <div class="catlegend" id="catLegend"></div>
 </footer>
+
+<!-- Anmeldung (nur im Serverbetrieb) -->
+<dialog id="loginDialog">
+  <form id="loginForm">
+    <h2>Kalender – Anmelden</h2>
+    <div class="row">
+      <label class="cap" for="lName">Benutzername</label>
+      <input type="text" id="lName" autocomplete="username" maxlength="30">
+    </div>
+    <div class="row">
+      <label class="cap" for="lPw">Passwort</label>
+      <input type="password" id="lPw" autocomplete="current-password">
+    </div>
+    <div class="err" id="lError"></div>
+    <div class="actions"><button type="submit" class="primary">Anmelden</button></div>
+  </form>
+</dialog>
+
+<dialog id="pwDialog">
+  <form id="pwForm">
+    <h2>Passwort ändern</h2>
+    <p class="hint" id="pwHint"></p>
+    <div class="row">
+      <label class="cap" for="pwOld">Bisheriges Passwort</label>
+      <input type="password" id="pwOld" autocomplete="current-password">
+    </div>
+    <div class="row">
+      <label class="cap" for="pwNew">Neues Passwort</label>
+      <input type="password" id="pwNew" autocomplete="new-password">
+    </div>
+    <div class="row">
+      <label class="cap" for="pwNew2">Neues Passwort wiederholen</label>
+      <input type="password" id="pwNew2" autocomplete="new-password">
+    </div>
+    <div class="err" id="pwError"></div>
+    <div class="actions">
+      <button type="button" id="pwCancel">Abbrechen</button>
+      <button type="submit" class="primary">Speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Benutzerverwaltung (Administratoren) -->
+<dialog id="usersDialog" class="wide">
+  <h2>Benutzer verwalten</h2>
+  <p class="hint">Rechte je Person: <b>–</b> nicht sichtbar · <b>sehen</b> · <b>bearbeiten</b>. Administratoren sehen und
+    bearbeiten alles. Anzeige-Zugänge (Monitor) können nur sehen und melden sich über ihren Link an.
+    Änderungen werden sofort gespeichert.</p>
+  <div class="users-wrap"><table id="usersTable"></table></div>
+  <form id="newUserForm">
+    <span class="cap">Neuer Zugang</span>
+    <div class="btnrow">
+      <input type="text" id="nuName" placeholder="Benutzername" maxlength="30">
+      <select id="nuRole">
+        <option value="user">Benutzer</option>
+        <option value="admin">Administrator</option>
+        <option value="display">Anzeige (Monitor)</option>
+      </select>
+      <input type="text" id="nuPw" placeholder="Start-Passwort (mind. 8 Zeichen)" autocomplete="off">
+      <button type="submit" class="primary">Anlegen</button>
+    </div>
+  </form>
+  <div class="hint" id="usersMsg"></div>
+  <div class="actions"><button type="button" id="usersCloseBtn">Schließen</button></div>
+</dialog>
 
 <div id="toast" hidden><span></span><button type="button">Rückgängig</button></div>
 
@@ -466,12 +553,20 @@
 <dialog id="settingsDialog">
   <form id="settingsForm" method="dialog">
     <h2>Einstellungen</h2>
-    <div class="row">
-      <span class="cap">Personen (Häkchen = im Kalender anzeigen)</span>
+    <div class="row" id="sAccount">
+      <span class="cap">Angemeldet als <b id="sUserName"></b></span>
+      <div class="btnrow">
+        <button type="button" id="sPwBtn">Passwort ändern</button>
+        <button type="button" id="sUsersBtn">Benutzer verwalten</button>
+        <button type="button" id="sLogoutBtn">Abmelden</button>
+      </div>
+    </div>
+    <div class="row admin-only">
+      <span class="cap">Personen (Häkchen = in diesem Browser anzeigen)</span>
       <div id="sPersons"></div>
       <div><button type="button" id="sAddPerson">+ Person hinzufügen</button></div>
     </div>
-    <div class="row">
+    <div class="row admin-only">
       <span class="cap">Kategorien (Häkchen = zählt als abwesend)</span>
       <div id="sCats"></div>
       <div><button type="button" id="sAddCat">+ Kategorie hinzufügen</button></div>
@@ -485,11 +580,11 @@
         <span>Min.</span>
       </div>
     </div>
-    <div class="row">
+    <div class="row admin-only">
       <label class="cap" for="sRegion">Feiertage</label>
       <select id="sRegion"></select>
     </div>
-    <div class="row">
+    <div class="row admin-only">
       <span class="cap">Daten sichern / übertragen</span>
       <div class="swatches">
         <button type="button" id="exportBtn">Exportieren (JSON)</button>
@@ -524,6 +619,8 @@
     entries: [],
     categories: [],
   };
+  // Tiefe Kopie (auch in älteren Browsern, z. B. auf Thin Clients)
+  const clone = o => JSON.parse(JSON.stringify(o));
   const DEFAULT_CATEGORIES = [
     { id: 'c-urlaub', name: 'Urlaub', color: '#16a34a', absent: true },
     { id: 'c-krank', name: 'Krank', color: '#dc2626', absent: true },
@@ -533,7 +630,7 @@
   ];
   // Ältere Speicherstände ohne Kategorien ergänzen
   function normalize(s) {
-    if (!Array.isArray(s.categories)) s.categories = structuredClone(DEFAULT_CATEGORIES);
+    if (!Array.isArray(s.categories)) s.categories = clone(DEFAULT_CATEGORIES);
     return s;
   }
 
@@ -546,13 +643,53 @@
         if (Array.isArray(s.persons) && s.persons.length && Array.isArray(s.entries)) return normalize(s);
       }
     } catch (e) { /* ignorieren, Standard verwenden */ }
-    return normalize(structuredClone(DEFAULT_STATE));
+    return normalize(clone(DEFAULT_STATE));
   }
   function save() {
+    if (SERVER) return; // im Serverbetrieb speichert der Server
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* nicht verfügbar */ }
   }
 
   let state = load();
+
+  // ---------- Server-Betrieb ----------
+  // Über http(s) geöffnet: Daten, Anmeldung und Rechte kommen vom Kalender-Server.
+  // Direkt als Datei geöffnet: Einzelplatz-Betrieb mit Speicherung im Browser (wie bisher).
+  const SERVER = location.protocol === 'http:' || location.protocol === 'https:';
+  let me = null;          // angemeldeter Benutzer { id, name, role, mustChange }
+  let dataVersion = 0;
+  if (SERVER) state = { persons: [], entries: [], categories: [], holidayRegion: 'DE' };
+  const urlKey = new URLSearchParams(location.search).get('key'); // Anzeige-Link
+
+  async function api(method, path, body) {
+    let res;
+    try {
+      res = await fetch(path, { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+                                body: body === undefined ? undefined : JSON.stringify(body) });
+    } catch (e) {
+      throw Object.assign(new Error('Server nicht erreichbar.'), { status: 0 });
+    }
+    let data = {};
+    try { data = await res.json(); } catch (e) { /* keine Antwortdaten */ }
+    if (!res.ok) {
+      if (res.status === 401 && path !== '/api/login' && path !== '/api/me') handleUnauthorized();
+      throw Object.assign(new Error(data.error || `Fehler ${res.status}`), { status: res.status });
+    }
+    return data;
+  }
+
+  // Rechte (ohne Server: alles erlaubt)
+  const isDisplay = () => SERVER && me?.role === 'display';
+  const isAdmin = () => !SERVER || me?.role === 'admin';
+  const canEditPerson = id => !SERVER || (!isDisplay() && !!state.persons.find(p => p.id === id)?.canEdit);
+  const canEditEntry = e => !isDisplay() && !e._ro && e.persons.every(canEditPerson);
+
+  // Ausgeblendete Personen gelten nur für diesen Browser
+  const HIDDEN_KEY = 'jahreskalender.hidden';
+  let hiddenIds = new Set();
+  try { hiddenIds = new Set(JSON.parse(localStorage.getItem(HIDDEN_KEY)) || []); } catch (e) { /* egal */ }
+  state.persons.forEach(p => { if (p.hidden) { hiddenIds.add(p.id); delete p.hidden; } }); // ältere Speicherstände
+  const saveHidden = () => { try { localStorage.setItem(HIDDEN_KEY, JSON.stringify([...hiddenIds])); } catch (e) { /* egal */ } };
 
   // ---------- Datum-Helfer (lokale Zeit, Format YYYY-MM-DD) ----------
   const pad = n => String(n).padStart(2, '0');
@@ -767,6 +904,15 @@
     const cols = bands[0].days.length;
     const persons = visiblePersons();
     const n = persons.length;
+    document.getElementById('addBtn').hidden = isDisplay() || !state.persons.some(p => canEditPerson(p.id));
+    document.getElementById('settingsBtn').hidden = isDisplay();
+    if (!n) {
+      cal.style.gridTemplateColumns = cal.style.gridTemplateRows = '1fr';
+      cal.appendChild(Object.assign(el('div', 'empty-note'), { textContent: SERVER && !me ? '' :
+        'Für diesen Zugang sind keine Personen freigegeben. Bitte an den Administrator wenden.' }));
+      renderInfo();
+      return;
+    }
     const allDays = bands.flatMap(b => b.days).filter(Boolean);
     const insts = instances(allDays[0], allDays[allDays.length - 1]);
     const away = allAwayDays(insts, allDays[0], allDays[allDays.length - 1]);
@@ -1027,13 +1173,14 @@
   function renderLegend() {
     const lg = document.getElementById('legend');
     lg.replaceChildren(...state.persons.map(p => {
-      const s = el('span', p.hidden ? 'off' : '');
+      const off = hiddenIds.has(p.id);
+      const s = el('span', off ? 'off' : '');
       s.append(el('i', null, { background: p.color }), document.createTextNode(p.name));
-      s.title = p.hidden ? 'Ausgeblendet – klicken zum Einblenden' : 'Klicken zum Ausblenden';
+      s.title = off ? 'Ausgeblendet – klicken zum Einblenden' : 'Klicken zum Ausblenden';
       s.addEventListener('click', () => {
-        if (!p.hidden && visiblePersons().length === 1) return; // mindestens eine Person bleibt sichtbar
-        p.hidden = !p.hidden;
-        save();
+        if (!off && visiblePersons().length === 1) return; // mindestens eine Person bleibt sichtbar
+        if (off) hiddenIds.delete(p.id); else hiddenIds.add(p.id);
+        saveHidden();
         render();
       });
       return s;
@@ -1046,7 +1193,10 @@
     return (0.299 * r + 0.587 * g + 0.114 * b) > 160 ? '#111827' : '#ffffff';
   }
   const personById = id => state.persons.find(p => p.id === id);
-  const visiblePersons = () => state.persons.filter(p => !p.hidden);
+  const visiblePersons = () => {
+    const v = state.persons.filter(p => !hiddenIds.has(p.id));
+    return v.length ? v : state.persons; // mindestens eine Person bleibt sichtbar
+  };
   const newId = prefix => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
   // ---------- Eintrag-Dialog ----------
@@ -1061,19 +1211,49 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => { toast.hidden = true; }, 8000);
   }
-  // Änderung abschließen: vorherigen Stand merken, speichern, neu zeichnen, Hinweis zeigen
-  function commit(before, msg) {
-    undoStack.push(before);
-    if (undoStack.length > 50) undoStack.shift();
-    save();
-    render();
-    showToast(msg, true);
+  // Einträge ändern – lokal oder über den Server. op: { type: 'create'|'update'|'delete', entry | id }
+  const cleanEntry = e => { const c = clone(e); delete c._ro; return c; };
+  function upsertLocal(entry) {
+    const i = state.entries.findIndex(x => x.id === entry.id);
+    if (i >= 0) state.entries[i] = entry; else state.entries.push(entry);
   }
-  function undo() {
-    if (!undoStack.length) { showToast('Nichts zum Rückgängigmachen'); return; }
-    state = normalize(JSON.parse(undoStack.pop()));
-    holidayCache.clear();
+  async function entryOp(op) {
+    if (op.type === 'delete') {
+      if (SERVER) await api('DELETE', `/api/entries/${op.id}`);
+      state.entries = state.entries.filter(e => e.id !== op.id);
+    } else {
+      let entry = cleanEntry(op.entry);
+      if (SERVER) {
+        const create = op.type === 'create';
+        entry = (await api(create ? 'POST' : 'PUT', create ? '/api/entries' : `/api/entries/${entry.id}`, entry)).entry;
+      }
+      upsertLocal(entry);
+    }
     save();
+  }
+  // Änderungen ausführen; "inverse" sind die Gegen-Operationen für „Rückgängig“
+  async function runOps(ops, inverse, msg) {
+    try {
+      for (const op of ops) await entryOp(op);
+    } catch (err) {
+      showToast('Nicht gespeichert: ' + err.message);
+      await reloadData().catch(() => render());
+      return;
+    }
+    if (inverse) { undoStack.push(inverse); if (undoStack.length > 50) undoStack.shift(); }
+    render();
+    showToast(msg, !!inverse);
+  }
+  async function undo() {
+    const inverse = undoStack.pop();
+    if (!inverse) { showToast('Nichts zum Rückgängigmachen'); return; }
+    try {
+      for (const op of inverse) await entryOp(op);
+    } catch (err) {
+      showToast('Rückgängig nicht möglich: ' + err.message);
+      await reloadData().catch(() => render());
+      return;
+    }
     render();
     showToast('Rückgängig gemacht');
   }
@@ -1103,6 +1283,7 @@
     if (bar) {
       e.preventDefault();
       const { e: entry, contL, contR } = bar._inst;
+      if (!canEditEntry(entry)) { barDrag = { entry, readOnly: true }; return; } // nur ansehen
       const r = bar.getBoundingClientRect();
       // Griffe: waagerecht linker/rechter Rand, senkrecht oberer/unterer Rand
       const [lo, hi, at] = vertical ? [r.top, r.bottom, e.clientY] : [r.left, r.right, e.clientX];
@@ -1111,11 +1292,11 @@
       cal.classList.add('dragging'); // Balken lassen Zeiger durch, damit der Tag darunter gefunden wird
       const startDate = dayAt(e.clientX, e.clientY)?.dataset.date || bar._inst.from;
       barDrag = { entry, mode, startDate, orig: { from: entry.from, to: entry.to, half: entry.half },
-                  before: JSON.stringify(state), moved: false };
+                  origEntry: cleanEntry(entry), moved: false };
       return;
     }
     const c = e.target.closest('.day[data-date]');
-    if (!c) return;
+    if (!c || !canEditPerson(c.dataset.person)) return;
     e.preventDefault();
     drag = { person: c.dataset.person, start: c.dataset.date, end: c.dataset.date };
     cal.classList.add('dragging');
@@ -1123,6 +1304,7 @@
   });
   document.addEventListener('pointermove', e => {
     if (barDrag) {
+      if (barDrag.readOnly) return;
       const date = dayAt(e.clientX, e.clientY)?.dataset.date;
       if (!date) return;
       const delta = dayNum(date) - dayNum(barDrag.startDate);
@@ -1146,10 +1328,11 @@
   });
   document.addEventListener('pointerup', () => {
     if (barDrag) {
-      const { entry, moved, mode, before } = barDrag;
+      const { entry, moved, mode, origEntry } = barDrag;
       barDrag = null;
       cal.classList.remove('dragging', 'moving');
-      if (moved) commit(before, `„${entry.label}“ ${mode === 'move' ? 'verschoben' : 'geändert'}: ${fmt(entry.from)} – ${fmt(entry.to)}`);
+      if (moved) runOps([{ type: 'update', entry }], [{ type: 'update', entry: origEntry }],
+        `„${entry.label}“ ${mode === 'move' ? 'verschoben' : 'geändert'}: ${fmt(entry.from)} – ${fmt(entry.to)}`);
       else openEntry(entry);
       return;
     }
@@ -1161,7 +1344,8 @@
     openEntry(null, { from, to, persons: [person] });
   });
   document.addEventListener('pointercancel', () => {
-    if (barDrag) { state = normalize(JSON.parse(barDrag.before)); barDrag = null; render(); }
+    if (barDrag && !barDrag.readOnly) { upsertLocal(barDrag.origEntry); render(); }
+    barDrag = null;
     drag = null;
     clearDrag();
   });
@@ -1225,11 +1409,12 @@
       return b;
     }));
   }
+  let entryReadOnly = false;
   function updateHalf() {
     const single = fFrom.value && fFrom.value === fTo.value;
     if (!single) selHalf = '';
     fHalf.querySelectorAll('button').forEach(b => {
-      b.disabled = !single && b.dataset.half !== '';
+      b.disabled = entryReadOnly || (!single && b.dataset.half !== '');
       b.classList.toggle('active', b.dataset.half === selHalf);
     });
   }
@@ -1239,9 +1424,10 @@
 
   function openEntry(entry, preset = {}) {
     editing = entry;
+    entryReadOnly = !!entry && !canEditEntry(entry);
     const src = entry || preset;
-    document.getElementById('entryTitle').textContent = entry ? 'Eintrag bearbeiten' : 'Neuer Eintrag';
-    document.getElementById('deleteBtn').style.display = entry ? '' : 'none';
+    document.getElementById('entryTitle').textContent = entryReadOnly ? 'Eintrag (nur ansehen)' : entry ? 'Eintrag bearbeiten' : 'Neuer Eintrag';
+    document.getElementById('deleteBtn').style.display = entry && !entryReadOnly ? '' : 'none';
     document.getElementById('fSeriesHint').hidden = !entry?.repeat;
     fLabel.value = src.label || '';
     fFrom.value = src.from || todayIso();
@@ -1251,7 +1437,9 @@
     selHalf = src.half || '';
     fRepeat.value = repeatKey(src.repeat);
     fUntil.value = src.repeat?.until || '';
-    fPersons.replaceChildren(...state.persons.map(p => {
+    // Auswählbar sind nur Personen, die man bearbeiten darf (beim Ansehen: die des Eintrags)
+    const choices = state.persons.filter(p => entryReadOnly ? src.persons.includes(p.id) : canEditPerson(p.id));
+    fPersons.replaceChildren(...choices.map(p => {
       const l = el('label');
       const cb = el('input');
       cb.type = 'checkbox';
@@ -1263,6 +1451,9 @@
     fError.textContent = '';
     renderCats();
     renderSwatches();
+    dlg.querySelectorAll('input, select, button').forEach(x => { x.disabled = entryReadOnly && x.id !== 'cancelBtn'; });
+    dlg.querySelector('button[type=submit]').hidden = entryReadOnly;
+    document.getElementById('cancelBtn').textContent = entryReadOnly ? 'Schließen' : 'Abbrechen';
     updateHalf();
     updateRepeat();
     prevFrom = fFrom.value;
@@ -1307,24 +1498,24 @@
     else if (fRepeat.value && fUntil.value && fUntil.value < fFrom.value) err = '„Endet am“ darf nicht vor „Von“ liegen.';
     if (err) { ev.preventDefault(); fError.textContent = err; return; }
 
-    const before = JSON.stringify(state);
+    if (entryReadOnly) return;
     const data = { label, from: fFrom.value, to: fTo.value, persons, color: selColor,
                    category: selCategory, half: fFrom.value === fTo.value && selHalf ? selHalf : null,
                    repeat: repeatFromKey(fRepeat.value) };
     if (data.repeat && fUntil.value) data.repeat.until = fUntil.value;
-    const target = editing || { id: newId('e') };
-    Object.assign(target, data);
-    ['category', 'half', 'repeat'].forEach(k => { if (!target[k]) delete target[k]; });
-    if (!editing) state.entries.push(target);
-    commit(before, `„${label}“ ${editing ? 'gespeichert' : 'eingetragen'}`);
+    const entry = { id: editing ? editing.id : newId('e'), ...data };
+    ['category', 'half', 'repeat'].forEach(k => { if (!entry[k]) delete entry[k]; });
+    runOps([{ type: editing ? 'update' : 'create', entry }],
+           [editing ? { type: 'update', entry: cleanEntry(editing) } : { type: 'delete', id: entry.id }],
+           `„${label}“ ${editing ? 'gespeichert' : 'eingetragen'}`);
   });
   document.getElementById('cancelBtn').addEventListener('click', () => dlg.close());
   document.getElementById('deleteBtn').addEventListener('click', () => {
-    if (!editing) return;
-    const before = JSON.stringify(state);
-    state.entries = state.entries.filter(e => e !== editing);
+    if (!editing || entryReadOnly) return;
+    const old = cleanEntry(editing);
     dlg.close();
-    commit(before, `„${editing.label}“ ${editing.repeat ? '(ganze Serie) ' : ''}gelöscht`);
+    runOps([{ type: 'delete', id: old.id }], [{ type: 'create', entry: old }],
+           `„${old.label}“ ${old.repeat ? '(ganze Serie) ' : ''}gelöscht`);
   });
 
   // ---------- Einstellungen ----------
@@ -1347,7 +1538,7 @@
       n.addEventListener('input', () => { p.name = n.value; });
       const vis = el('label'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = !p.hidden;
       cb.addEventListener('change', () => { p.hidden = !cb.checked; });
-      vis.title = 'Im Kalender anzeigen'; vis.append(cb, 'anzeigen');
+      vis.title = 'In diesem Browser anzeigen'; vis.append(cb, 'anzeigen');
       const del = el('button', 'danger'); del.type = 'button'; del.textContent = '✕'; del.title = 'Person entfernen';
       del.disabled = draft.length === 1;
       del.addEventListener('click', () => { draft = draft.filter(x => x !== p); renderDraft(); });
@@ -1399,17 +1590,24 @@
   });
 
   document.getElementById('settingsBtn').addEventListener('click', () => {
-    draft = structuredClone(state.persons);
+    draft = state.persons.map(p => ({ id: p.id, name: p.name, color: p.color, hidden: hiddenIds.has(p.id) }));
     renderDraft();
-    catDraft = structuredClone(state.categories);
+    document.querySelectorAll('#settingsDialog .admin-only').forEach(x => { x.hidden = !isAdmin(); });
+    document.getElementById('sAccount').hidden = !SERVER;
+    document.getElementById('sUsersBtn').hidden = !(SERVER && isAdmin());
+    document.getElementById('sUserName').textContent = me ? `${me.name} (${{ admin: 'Administrator', user: 'Benutzer' }[me.role] || me.role})` : '';
+    catDraft = clone(state.categories);
     renderCatDraft();
     sIdleView.value = idle.view;
     sIdleMin.value = idle.minutes;
     sRegion.value = state.holidayRegion || 'DE';
     sDlg.showModal();
   });
-  document.getElementById('settingsForm').addEventListener('submit', ev => {
-    const before = JSON.stringify(state);
+  document.getElementById('settingsForm').addEventListener('submit', async ev => {
+    idle = { view: sIdleView.value, minutes: Math.max(1, Math.min(120, +sIdleMin.value || 5)) };
+    try { localStorage.setItem(IDLE_KEY, JSON.stringify(idle)); } catch (e) { /* egal */ }
+    if (!isAdmin()) { showToast('Einstellungen gespeichert'); return; }
+
     const ids = new Set(draft.map(p => p.id));
     const removed = state.persons.filter(p => !ids.has(p.id));
     if (removed.length) {
@@ -1419,16 +1617,27 @@
         ev.preventDefault();
         return;
       }
-      state.entries = state.entries
-        .map(e => ({ ...e, persons: e.persons.filter(id => ids.has(id)) }))
-        .filter(e => e.persons.length);
     }
     draft.forEach((p, i) => { p.name = p.name.trim() || `Person ${i + 1}`; });
-    if (draft.every(p => p.hidden)) draft[0].hidden = false; // mindestens eine Person bleibt sichtbar
-    state.persons = draft;
-    // Kategorien: geänderte Farbe auf deren Einträge übertragen, gelöschte Kategorien lösen
-    const oldCats = new Map(state.categories.map(c => [c.id, c]));
     catDraft.forEach((c, i) => { c.name = c.name.trim() || `Kategorie ${i + 1}`; });
+    hiddenIds = new Set(draft.filter(p => p.hidden).map(p => p.id));
+    saveHidden();
+    const persons = draft.map(({ id, name, color }) => ({ id, name, color }));
+
+    if (SERVER) {
+      try {
+        await api('PUT', '/api/settings', { persons, categories: catDraft, holidayRegion: sRegion.value });
+        await reloadData();
+        showToast('Einstellungen gespeichert');
+      } catch (e) { showToast('Nicht gespeichert: ' + e.message); }
+      return;
+    }
+
+    // Einzelplatz: Einträge entfernter Personen anpassen, Kategorie-Farben mitziehen
+    state.entries = state.entries
+      .map(e => ({ ...e, persons: e.persons.filter(id => ids.has(id)) }))
+      .filter(e => e.persons.length);
+    const oldCats = new Map(state.categories.map(c => [c.id, c]));
     const catIds = new Set(catDraft.map(c => c.id));
     state.entries.forEach(e => {
       if (!e.category) return;
@@ -1436,17 +1645,22 @@
       const old = oldCats.get(e.category), now = catDraft.find(c => c.id === e.category);
       if (old && old.color !== now.color && e.color === old.color) e.color = now.color;
     });
+    state.persons = persons;
     state.categories = catDraft;
     state.holidayRegion = sRegion.value;
     holidayCache.clear();
-    idle = { view: sIdleView.value, minutes: Math.max(1, Math.min(120, +sIdleMin.value || 5)) };
-    try { localStorage.setItem(IDLE_KEY, JSON.stringify(idle)); } catch (e) { /* egal */ }
-    commit(before, 'Einstellungen gespeichert');
+    save();
+    render();
+    showToast('Einstellungen gespeichert');
   });
   document.getElementById('sCancelBtn').addEventListener('click', () => sDlg.close());
 
-  document.getElementById('exportBtn').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  document.getElementById('exportBtn').addEventListener('click', async () => {
+    let data = state;
+    if (SERVER) {
+      try { data = await api('GET', '/api/export'); } catch (e) { showToast('Export fehlgeschlagen: ' + e.message); return; }
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = el('a');
     a.href = URL.createObjectURL(blob);
     a.download = `jahreskalender-${todayIso()}.json`;
@@ -1462,11 +1676,21 @@
       const s = JSON.parse(await file.text());
       if (!Array.isArray(s.persons) || !s.persons.length || !Array.isArray(s.entries)) throw new Error();
       if (!confirm('Aktuelle Daten durch die importierte Datei ersetzen?')) return;
-      const before = JSON.stringify(state);
-      state = normalize(s);
-      holidayCache.clear();
       sDlg.close();
-      commit(before, 'Daten importiert');
+      if (SERVER) {
+        try {
+          const r = await api('POST', '/api/import', s);
+          await reloadData();
+          showToast(`Importiert: ${r.entries} Einträge` + (r.skipped ? ` (${r.skipped} ungültige übersprungen)` : ''));
+        } catch (err) { showToast('Import fehlgeschlagen: ' + err.message); }
+        return;
+      }
+      state = normalize(s);
+      state.persons.forEach(p => { delete p.hidden; });
+      holidayCache.clear();
+      save();
+      render();
+      showToast('Daten importiert');
     } catch (e) {
       alert('Die Datei ist kein gültiger Kalender-Export.');
     } finally {
@@ -1482,7 +1706,7 @@
   const KEYS = { w: 'week', m: 'month', q: 'quarter', h: 'half', j: 'year' };
   document.addEventListener('keydown', e => {
     if (document.querySelector('dialog[open]')) return; // Eingabefelder gibt es nur in Dialogen
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); if (!isDisplay()) undo(); return; }
     if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'o') { toggleOrient(); return; }
     if (e.key === 'ArrowLeft') step(-1);
     else if (e.key === 'ArrowRight') step(1);
@@ -1572,10 +1796,230 @@
     }
   }, 60 * 1000);
 
-  // Änderungen aus einem anderen Tab übernehmen
-  window.addEventListener('storage', e => { if (e.key === STORAGE_KEY) { state = load(); holidayCache.clear(); render(); } });
+  // Änderungen aus einem anderen Tab übernehmen (Einzelplatz)
+  if (!SERVER) window.addEventListener('storage', e => { if (e.key === STORAGE_KEY) { state = load(); holidayCache.clear(); render(); } });
 
-  render();
+  // ---------- Server: Daten laden und aktuell halten ----------
+  function applyData(d) {
+    state = normalize({ persons: d.persons, categories: d.categories, entries: d.entries, holidayRegion: d.holidayRegion });
+    dataVersion = d.version;
+    holidayCache.clear();
+    render();
+  }
+  async function reloadData() {
+    if (!SERVER) { render(); return; }
+    applyData(await api('GET', '/api/data'));
+  }
+  const offlineEl = document.getElementById('offline');
+  setInterval(async () => {
+    if (!SERVER || !me || me.mustChange || drag || barDrag) return;
+    try {
+      const d = await api('GET', `/api/data?v=${dataVersion}`);
+      offlineEl.hidden = true;
+      if (!d.unchanged) applyData(d);
+    } catch (e) {
+      if (e.status === 0) offlineEl.hidden = false;
+    }
+  }, 20e3);
+
+  // ---------- Anmeldung ----------
+  const loginDlg = document.getElementById('loginDialog');
+  const pwDlg = document.getElementById('pwDialog');
+  const lName = document.getElementById('lName'), lPw = document.getElementById('lPw'), lError = document.getElementById('lError');
+  loginDlg.addEventListener('cancel', e => e.preventDefault()); // ohne Anmeldung geht es nicht weiter
+
+  function handleUnauthorized() {
+    if (urlKey) { boot(); return; } // Anzeige meldet sich mit ihrem Link selbst wieder an
+    showLogin('Die Sitzung ist abgelaufen – bitte erneut anmelden.');
+  }
+  function showLogin(msg) {
+    me = null;
+    document.body.classList.add('locked');
+    document.querySelectorAll('dialog[open]').forEach(d => { if (d !== loginDlg) d.close(); });
+    lError.textContent = msg || '';
+    if (!loginDlg.open) loginDlg.showModal();
+    (lName.value ? lPw : lName).focus();
+  }
+  document.getElementById('loginForm').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    lError.textContent = '';
+    try {
+      me = (await api('POST', '/api/login', { name: lName.value.trim(), password: lPw.value })).user;
+    } catch (e) { lError.textContent = e.message; lPw.select(); return; }
+    lPw.value = '';
+    loginDlg.close();
+    afterLogin();
+  });
+
+  let pwForced = false;
+  const pwOld = document.getElementById('pwOld'), pwNew = document.getElementById('pwNew'), pwNew2 = document.getElementById('pwNew2');
+  const pwError = document.getElementById('pwError');
+  pwDlg.addEventListener('cancel', e => { if (pwForced) e.preventDefault(); });
+  function showPasswordDialog(forced) {
+    pwForced = forced;
+    document.getElementById('pwHint').textContent = forced
+      ? 'Bitte vergib jetzt ein eigenes Passwort (mindestens 8 Zeichen).'
+      : 'Das neue Passwort muss mindestens 8 Zeichen haben.';
+    document.getElementById('pwCancel').hidden = forced;
+    pwOld.value = pwNew.value = pwNew2.value = '';
+    pwError.textContent = '';
+    pwDlg.showModal();
+    pwOld.focus();
+  }
+  document.getElementById('pwCancel').addEventListener('click', () => pwDlg.close());
+  document.getElementById('pwForm').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    if (pwNew.value !== pwNew2.value) { pwError.textContent = 'Die neuen Passwörter stimmen nicht überein.'; return; }
+    try {
+      me = (await api('POST', '/api/password', { old: pwOld.value, new: pwNew.value })).user;
+    } catch (e) { pwError.textContent = e.message; return; }
+    pwDlg.close();
+    if (pwForced) afterLogin(); else showToast('Passwort geändert');
+  });
+  document.getElementById('sPwBtn').addEventListener('click', () => { sDlg.close(); showPasswordDialog(false); });
+  document.getElementById('sLogoutBtn').addEventListener('click', async () => {
+    try { await api('POST', '/api/logout', {}); } catch (e) { /* trotzdem abmelden */ }
+    location.href = location.pathname;
+  });
+
+  async function afterLogin() {
+    if (me.mustChange) { document.body.classList.add('locked'); showPasswordDialog(true); return; }
+    document.body.classList.remove('locked');
+    undoStack.length = 0;
+    try { await reloadData(); } catch (e) { showToast(e.message); }
+  }
+
+  async function boot() {
+    if (!SERVER) { render(); return; }
+    document.body.classList.add('locked');
+    try {
+      me = urlKey ? (await api('POST', '/api/login', { key: urlKey })).user : (await api('GET', '/api/me')).user;
+    } catch (e) {
+      if (e.status === 401) showLogin(urlKey ? 'Der Anzeige-Link ist ungültig. Bitte beim Administrator nachfragen.' : '');
+      else showLogin('Server nicht erreichbar – bitte später erneut versuchen.');
+      return;
+    }
+    afterLogin();
+  }
+
+  // ---------- Benutzerverwaltung (Administratoren) ----------
+  const uDlg = document.getElementById('usersDialog');
+  const usersMsg = document.getElementById('usersMsg');
+  let users = [];
+  const ROLES = { admin: 'Administrator', user: 'Benutzer', display: 'Anzeige (Monitor)' };
+  function uMsg(text, isErr) { usersMsg.textContent = text; usersMsg.classList.toggle('err', !!isErr); }
+  const displayLink = u => `${location.origin}${location.pathname}?key=${u.key}`;
+  // Kopieren funktioniert auch ohne HTTPS (dort fehlt die Zwischenablage-API)
+  function copyText(text) {
+    const t = Object.assign(el('textarea'), { value: text });
+    uDlg.appendChild(t); t.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { /* nicht möglich */ }
+    t.remove();
+    return ok;
+  }
+  async function loadUsers() { users = (await api('GET', '/api/users')).users; renderUsers(); }
+
+  function renderUsers() {
+    const t = document.getElementById('usersTable');
+    const head = el('tr');
+    ['Name', 'Rolle', ...state.persons.map(p => p.name), ''].forEach(h => head.appendChild(Object.assign(el('th'), { textContent: h })));
+    const rows = users.map(u => {
+      const tr = el('tr');
+      const name = el('td');
+      name.append(Object.assign(el('b'), { textContent: u.name }));
+      if (u.id === me.id) name.append(' (du)');
+      if (u.mustChange) name.append(Object.assign(el('div', 'muted'), { textContent: 'muss Passwort ändern' }));
+      const role = el('td');
+      if (u.role === 'display' || u.id === me.id) role.textContent = ROLES[u.role];
+      else {
+        const sel = el('select');
+        ['user', 'admin'].forEach(r => sel.appendChild(Object.assign(el('option'), { value: r, textContent: ROLES[r] })));
+        sel.value = u.role;
+        sel.addEventListener('change', () => saveUser(u, { role: sel.value }));
+        role.appendChild(sel);
+      }
+      tr.append(name, role);
+      state.persons.forEach(p => {
+        const td = el('td');
+        if (u.role === 'admin') td.append(Object.assign(el('span', 'muted'), { textContent: 'alles' }));
+        else {
+          const sel = el('select');
+          const opts = u.role === 'display' ? [['', '–'], ['view', 'sehen']] : [['', '–'], ['view', 'sehen'], ['edit', 'bearbeiten']];
+          opts.forEach(([v, l]) => sel.appendChild(Object.assign(el('option'), { value: v, textContent: l })));
+          sel.value = u.perms?.[p.id] || '';
+          sel.addEventListener('change', () => {
+            const perms = { ...(u.perms || {}) };
+            if (sel.value) perms[p.id] = sel.value; else delete perms[p.id];
+            saveUser(u, { perms });
+          });
+          td.appendChild(sel);
+        }
+        tr.appendChild(td);
+      });
+      const acts = el('td', 'acts');
+      const btn = (label, fn, cls) => { const b = el('button', cls || ''); b.type = 'button'; b.textContent = label; b.addEventListener('click', fn); acts.appendChild(b); return b; };
+      if (u.role === 'display') {
+        const link = Object.assign(el('input', 'link'), { type: 'text', readOnly: true, value: displayLink(u), title: 'Diesen Link im ThinPro-Browser (Kiosk) eintragen' });
+        link.addEventListener('focus', () => link.select());
+        acts.appendChild(link);
+        btn('Kopieren', () => uMsg(copyText(displayLink(u)) ? 'Link kopiert.' : 'Bitte den Link markieren und mit Strg+C kopieren.'));
+        btn('Neuer Link', async () => {
+          if (!confirm(`Neuen Link für „${u.name}“ erzeugen? Der bisherige Link funktioniert dann nicht mehr.`)) return;
+          try { Object.assign(u, (await api('POST', `/api/users/${u.id}/key`, {})).user); uMsg('Neuer Link erzeugt – bitte im Monitor eintragen.'); renderUsers(); }
+          catch (e) { uMsg(e.message, true); }
+        });
+      } else {
+        btn('Passwort zurücksetzen', async () => {
+          const pw = prompt(`Neues Start-Passwort für „${u.name}“ (mind. 8 Zeichen).\n${u.name} muss es beim nächsten Anmelden ändern.`);
+          if (pw === null) return;
+          try { Object.assign(u, (await api('POST', `/api/users/${u.id}/password`, { password: pw })).user); uMsg(`Passwort für „${u.name}“ zurückgesetzt.`); renderUsers(); }
+          catch (e) { uMsg(e.message, true); }
+        });
+      }
+      const del = btn('Löschen', async () => {
+        if (!confirm(`Zugang „${u.name}“ wirklich löschen?`)) return;
+        try { await api('DELETE', `/api/users/${u.id}`); uMsg(`„${u.name}“ gelöscht.`); await loadUsers(); }
+        catch (e) { uMsg(e.message, true); }
+      }, 'danger');
+      del.disabled = u.id === me.id;
+      tr.appendChild(acts);
+      return tr;
+    });
+    t.replaceChildren(head, ...rows);
+  }
+  async function saveUser(u, changes) {
+    try {
+      Object.assign(u, (await api('PUT', `/api/users/${u.id}`, { perms: u.perms, ...changes })).user);
+      uMsg(`„${u.name}“ gespeichert.`);
+      if (u.id === me.id && changes.role) { location.reload(); return; }
+    } catch (e) {
+      uMsg(e.message, true);
+      await loadUsers().catch(() => {});
+    }
+    renderUsers();
+  }
+  const nuRole = document.getElementById('nuRole'), nuPw = document.getElementById('nuPw'), nuName = document.getElementById('nuName');
+  nuRole.addEventListener('change', () => { nuPw.hidden = nuRole.value === 'display'; });
+  document.getElementById('newUserForm').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    try {
+      const r = await api('POST', '/api/users', { name: nuName.value.trim(), role: nuRole.value, password: nuPw.value, perms: {} });
+      uMsg(r.user.role === 'display'
+        ? `Anzeige „${r.user.name}“ angelegt – jetzt Personen auf „sehen“ stellen und den Link im Monitor eintragen.`
+        : `„${r.user.name}“ angelegt – jetzt die Rechte je Person festlegen.`);
+      nuName.value = nuPw.value = '';
+      await loadUsers();
+    } catch (e) { uMsg(e.message, true); }
+  });
+  document.getElementById('sUsersBtn').addEventListener('click', async () => {
+    sDlg.close();
+    uMsg('');
+    try { await loadUsers(); uDlg.showModal(); } catch (e) { showToast(e.message); }
+  });
+  document.getElementById('usersCloseBtn').addEventListener('click', () => uDlg.close());
+
+  boot();
 })();
 </script>
 </body>
