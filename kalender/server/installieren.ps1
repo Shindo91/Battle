@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Richtet den Kalender-Server auf Windows Server (auch Core) ein: Autostart + Firewall.
 
@@ -41,12 +41,14 @@ if ($Entfernen) {
 }
 
 if (-not (Test-Path $Script)) { Write-Error "kalender-server.ps1 nicht gefunden: $Script"; exit 1 }
-if (-not (Test-Path (Join-Path (Split-Path $PSScriptRoot -Parent) 'index.html'))) {
-  Write-Error 'index.html fehlt – sie muss im Ordner über "server" liegen (z. B. C:\Kalender\index.html).'; exit 1
+# index.html neben den Skripten oder eine Ebene darüber (Unterordner "server")
+$WebRoot = $(if (Test-Path (Join-Path $PSScriptRoot 'index.html')) { $PSScriptRoot } else { Split-Path $PSScriptRoot -Parent })
+if (-not (Test-Path (Join-Path $WebRoot 'index.html'))) {
+  Write-Error "index.html fehlt – bitte in denselben Ordner wie die Skripte legen ($PSScriptRoot)."; exit 1
 }
 
-# Aus dem Internet geladene Dateien entsperren
-Get-ChildItem (Split-Path $PSScriptRoot -Parent) -Recurse -File | Unblock-File -ErrorAction SilentlyContinue
+# Aus dem Internet geladene Dateien entsperren (sonst fragt Windows bei jedem Start nach)
+Get-ChildItem $WebRoot -Recurse -File | Unblock-File -ErrorAction SilentlyContinue
 
 # Geplante Aufgabe (ersetzt eine vorhandene)
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {

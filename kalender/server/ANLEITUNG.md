@@ -16,25 +16,23 @@ Voraussetzungen: Windows Server 2016 oder neuer (getestet für 2025 Core), Windo
 
 ## 1. Dateien auf den Server kopieren
 
-Ordnerstruktur, z. B. unter `C:\Kalender`:
+Alle drei Dateien in **einen Ordner**, z. B. `C:\Kalender`:
 
 ```
 C:\Kalender\index.html
-C:\Kalender\server\kalender-server.ps1
-C:\Kalender\server\installieren.ps1
+C:\Kalender\kalender-server.ps1
+C:\Kalender\installieren.ps1
 ```
 
-Vom Arbeitsplatz aus z. B. über die Admin-Freigabe `\\SERVERNAME\c$\Kalender` oder per PowerShell:
+(Alternativ dürfen die beiden Skripte auch in einem Unterordner `server` liegen. Die Daten landen
+immer im Ordner `daten` neben den Skripten.)
 
-```powershell
-$s = New-PSSession -ComputerName SERVERNAME
-Copy-Item -ToSession $s -Path .\kalender -Destination C:\Kalender -Recurse
-```
+Vom Arbeitsplatz aus z. B. über die Admin-Freigabe `\\SERVERNAME\c$\Kalender`.
 
 ## 2. Einrichten (auf dem Server, PowerShell als Administrator)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File C:\Kalender\server\installieren.ps1 -Port 8080
+powershell -ExecutionPolicy Bypass -File C:\Kalender\installieren.ps1 -Port 8080
 ```
 
 Das Skript
@@ -42,7 +40,7 @@ Das Skript
 - öffnet den Port in der **Windows-Firewall** (Profile Domäne/Privat),
 - startet den Server und zeigt das **erste Admin-Passwort** an.
 
-Das Passwort steht auch in `C:\Kalender\server\daten\ERSTES-ADMIN-PASSWORT.txt`. Die Datei wird
+Das Passwort steht auch in `C:\Kalender\daten\ERSTES-ADMIN-PASSWORT.txt`. Die Datei wird
 gelöscht, sobald der Admin sein Passwort geändert hat.
 
 Test vom Arbeitsplatz: `http://SERVERNAME:8080/` öffnen → mit `admin` und dem Passwort anmelden →
@@ -88,11 +86,11 @@ Link funktioniert dann sofort nicht mehr.
 |---|---|
 | Status | `Get-ScheduledTask Kalender-Server` |
 | Neu starten | `Stop-ScheduledTask Kalender-Server; Start-ScheduledTask Kalender-Server` |
-| Protokoll | `C:\Kalender\server\daten\server.log` |
-| Daten | `C:\Kalender\server\daten\kalender.json`, `benutzer.json` |
-| Sicherungen | `C:\Kalender\server\daten\backup\` – täglich, 60 Tage aufbewahrt. Den Ordner `daten` zusätzlich in die normale Server-Sicherung aufnehmen. |
+| Protokoll | `C:\Kalender\daten\server.log` |
+| Daten | `C:\Kalender\daten\kalender.json`, `benutzer.json` |
+| Sicherungen | `C:\Kalender\daten\backup\` – täglich, 60 Tage aufbewahrt. Den Ordner `daten` zusätzlich in die normale Server-Sicherung aufnehmen. |
 | Update | neue `index.html` / `kalender-server.ps1` hineinkopieren, dann Server neu starten |
-| Admin-Passwort vergessen | `powershell -ExecutionPolicy Bypass -File C:\Kalender\server\kalender-server.ps1 -ResetAdmin` → neues Passwort in `ERSTES-ADMIN-PASSWORT.txt` |
+| Admin-Passwort vergessen | `powershell -ExecutionPolicy Bypass -File C:\Kalender\kalender-server.ps1 -ResetAdmin` → neues Passwort in `ERSTES-ADMIN-PASSWORT.txt` |
 | Anderer Port | `installieren.ps1 -Port 8090` erneut ausführen |
 | Entfernen | `installieren.ps1 -Entfernen` (Daten bleiben erhalten) |
 

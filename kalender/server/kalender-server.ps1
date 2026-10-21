@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Kalender-Server: liefert kalender/index.html aus und speichert Kalender + Benutzer zentral.
 
@@ -28,7 +28,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$WebRoot      = Split-Path $PSScriptRoot -Parent          # Ordner mit index.html
+# index.html liegt neben dem Skript (alles in einem Ordner) oder eine Ebene darüber (Unterordner "server")
+$WebRoot      = $(if (Test-Path (Join-Path $PSScriptRoot 'index.html')) { $PSScriptRoot } else { Split-Path $PSScriptRoot -Parent })
 $CalFile      = Join-Path $DataDir 'kalender.json'
 $UsersFile    = Join-Path $DataDir 'benutzer.json'
 $BackupDir    = Join-Path $DataDir 'backup'
