@@ -13,6 +13,12 @@
 
 .PARAMETER Port
   TCP-Port des Kalenders (Standard 8080).
+.PARAMETER AdNutzerGruppe
+  AD-Gruppe, deren Mitglieder sich anmelden dürfen (Standard L_Kalender_Nutzer).
+.PARAMETER AdAdminGruppe
+  AD-Gruppe der Administratoren (Standard L_Kalender_Admins).
+.PARAMETER OhneAD
+  Keine Windows-/AD-Anmeldung, nur lokale Konten.
 .PARAMETER Entfernen
   Entfernt geplante Aufgabe und Firewall-Regel wieder (Daten bleiben erhalten).
 
@@ -20,6 +26,9 @@
 #>
 param(
   [int]$Port = 8080,
+  [string]$AdNutzerGruppe = 'L_Kalender_Nutzer',
+  [string]$AdAdminGruppe = 'L_Kalender_Admins',
+  [switch]$OhneAD,
   [switch]$Entfernen
 )
 
@@ -60,7 +69,8 @@ if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
   Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
 }
 $action    = New-ScheduledTaskAction -Execute 'powershell.exe' `
-               -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$Script`" -Port $Port" `
+               -Argument ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$Script`" -Port $Port " +
+                          $(if ($OhneAD) { '-OhneAD' } else { "-AdNutzerGruppe `"$AdNutzerGruppe`" -AdAdminGruppe `"$AdAdminGruppe`"" })) `
                -WorkingDirectory $PSScriptRoot
 $trigger   = New-ScheduledTaskTrigger -AtStartup
 $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
@@ -82,6 +92,8 @@ if (Get-ScheduledTask -TaskName $UpdateTaskName -ErrorAction SilentlyContinue) {
 
 Start-ScheduledTask -TaskName $TaskName
 Write-Host "Kalender-Server eingerichtet und gestartet: http://$($env:COMPUTERNAME):$Port/"
+if ($OhneAD) { Write-Host 'Anmeldung: nur lokale Konten.' }
+else { Write-Host "Anmeldung: Windows-Konten der Gruppe '$AdNutzerGruppe', Administratoren: '$AdAdminGruppe' (Notzugang: admin)." }
 
 # Beim ersten Start: Admin-Passwort anzeigen
 $pwFile = Join-Path $DataDir 'ERSTES-ADMIN-PASSWORT.txt'

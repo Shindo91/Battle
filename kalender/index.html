@@ -343,6 +343,7 @@
   #usersTable .muted { color: var(--muted); }
   #usersTable input.link { width: 11em; padding: 3px 6px; font-size: .8rem; }
   #usersMsg, #teamMsg { min-height: 1.3em; }
+  .badge { display: inline-block; font-size: .7rem; font-weight: 700; padding: 0 5px; border-radius: 4px; background: var(--accent); color: #fff; vertical-align: middle; }
   #teamMsg.err { color: var(--danger); }
   .team-group { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
   .team-group h3 { margin: 0 0 8px; font-size: 1.05rem; }
@@ -470,9 +471,10 @@
 <dialog id="loginDialog">
   <form id="loginForm">
     <h2>Kalender – Anmelden</h2>
+    <p class="hint" id="lHint" hidden>Mit deinem <b>Windows-Benutzernamen</b> und <b>Windows-Passwort</b> anmelden.</p>
     <div class="row">
       <label class="cap" for="lName">Benutzername</label>
-      <input type="text" id="lName" autocomplete="username" maxlength="30">
+      <input type="text" id="lName" autocomplete="username" maxlength="60">
     </div>
     <div class="row">
       <label class="cap" for="lPw">Passwort</label>
@@ -517,7 +519,7 @@
   <form id="newUserForm">
     <span class="cap">Neuer Zugang</span>
     <div class="btnrow">
-      <input type="text" id="nuName" placeholder="Benutzername" maxlength="30">
+      <input type="text" id="nuName" placeholder="Benutzername" maxlength="60">
       <select id="nuRole">
         <option value="user">Benutzer</option>
         <option value="admin">Administrator</option>
@@ -1940,6 +1942,7 @@
     document.getElementById('sAccount').hidden = !SERVER;
     document.getElementById('sUsersBtn').hidden = !(SERVER && (isAdmin() || isGroupAdmin()));
     document.getElementById('sTeamBtn').hidden = !(SERVER && isGroupAdmin());
+    document.getElementById('sPwBtn').hidden = !SERVER || me?.source === 'ad';
     document.getElementById('sUserName').textContent = me ? `${me.name} (${ROLES[me.role] || me.role})` : '';
     document.getElementById('sMyGroupsRow').hidden = !SERVER;
     myGroupDraft = clone(state.myGroups);
@@ -2290,9 +2293,12 @@
     try { await reloadData(); } catch (e) { showToast(e.message); }
   }
 
+  let auth = { ad: false };   // Anmeldung über Active Directory? (vom Server)
   async function boot() {
     if (!SERVER) { render(); return; }
     document.body.classList.add('locked');
+    try { auth = await api('GET', '/api/info'); } catch (e) { /* ältere Server: lokale Anmeldung */ }
+    document.getElementById('lHint').hidden = !auth.ad;
     try {
       me = urlKey ? (await api('POST', '/api/login', { key: urlKey })).user : (await api('GET', '/api/me')).user;
     } catch (e) {
@@ -2334,12 +2340,17 @@
       const name = el('td');
       name.append(Object.assign(el('b'), { textContent: u.name }));
       if (u.id === me.id) name.append(' (du)');
-      if (u.mustChange) name.append(Object.assign(el('div', 'muted'), { textContent: 'muss Passwort ändern' }));
+      if (u.source === 'ad') name.append(' ', Object.assign(el('span', 'badge'), { textContent: 'AD', title: 'Meldet sich mit dem Windows-Konto an' }));
+      else if (auth.ad && u.role !== 'display' && u.name.toLowerCase() !== 'admin') {
+        name.append(Object.assign(el('div', 'muted'), { textContent: 'altes lokales Konto – Anmeldung nur noch per Windows' }));
+      }
+      if (u.mustChange && u.source !== 'ad') name.append(Object.assign(el('div', 'muted'), { textContent: 'muss Passwort ändern' }));
       const role = el('td');
       if (u.role === 'display' || u.id === me.id || !isAdmin()) role.textContent = ROLES[u.role];
+      else if (u.source === 'ad' && u.role === 'admin') role.textContent = `Administrator (AD-Gruppe ${auth.adminGroup})`;
       else {
         const sel = el('select');
-        ['user', 'groupadmin', 'admin'].forEach(r => sel.appendChild(Object.assign(el('option'), { value: r, textContent: ROLES[r] })));
+        (u.source === 'ad' ? ['user', 'groupadmin'] : ['user', 'groupadmin', 'admin']).forEach(r => sel.appendChild(Object.assign(el('option'), { value: r, textContent: ROLES[r] })));
         sel.value = u.role;
         sel.addEventListener('change', () => saveUser(u, { role: sel.value, adminGroups: u.adminGroups || [] }));
         role.appendChild(sel);
@@ -2390,6 +2401,8 @@
           try { Object.assign(u, (await api('POST', `/api/users/${u.id}/key`, {})).user); uMsg('Neuer Link erzeugt – bitte im Monitor eintragen.'); renderUsers(); }
           catch (e) { uMsg(e.message, true); }
         });
+      } else if (u.source === 'ad') {
+        acts.append(Object.assign(el('span', 'muted'), { textContent: 'Passwort im AD', title: 'AD-Passwörter werden im Active Directory geändert' }));
       } else {
         btn('Passwort zurücksetzen', async () => {
           const pw = prompt(`Neues Start-Passwort für „${u.name}“ (mind. 8 Zeichen).\n${u.name} muss es beim nächsten Anmelden ändern.`);
@@ -2423,18 +2436,27 @@
   }
   const nuRole = document.getElementById('nuRole'), nuPw = document.getElementById('nuPw'), nuName = document.getElementById('nuName');
   function fillRoleOptions() {
-    const roles = isAdmin() ? ['user', 'groupadmin', 'admin', 'display'] : ['user', 'display'];
-    nuRole.replaceChildren(...roles.map(r => Object.assign(el('option'), { value: r, textContent: ROLES[r] })));
-    nuPw.hidden = false;
+    // Mit AD: Windows-Konten vorab eintragen (Admin wird man über die AD-Gruppe) oder Anzeige anlegen
+    const roles = auth.ad ? (isAdmin() ? ['user', 'groupadmin', 'display'] : ['user', 'display'])
+                          : (isAdmin() ? ['user', 'groupadmin', 'admin', 'display'] : ['user', 'display']);
+    const label = r => auth.ad && r !== 'display' ? `Windows-Konto als ${ROLES[r]}` : ROLES[r];
+    nuRole.replaceChildren(...roles.map(r => Object.assign(el('option'), { value: r, textContent: label(r) })));
+    updateNewUserForm();
   }
-  nuRole.addEventListener('change', () => { nuPw.hidden = nuRole.value === 'display'; });
+  function updateNewUserForm() {
+    nuPw.hidden = auth.ad || nuRole.value === 'display';
+    nuName.placeholder = nuRole.value === 'display' ? 'Name der Anzeige, z. B. Monitor Büro'
+      : auth.ad ? 'Windows-Benutzername, z. B. mmuster' : 'Benutzername';
+  }
+  nuRole.addEventListener('change', updateNewUserForm);
   document.getElementById('newUserForm').addEventListener('submit', async ev => {
     ev.preventDefault();
     try {
       const r = await api('POST', '/api/users', { name: nuName.value.trim(), role: nuRole.value, password: nuPw.value, perms: {} });
       uMsg(r.user.role === 'display'
         ? `Anzeige „${r.user.name}“ angelegt – jetzt Personen auf „sehen“ stellen und den Link im Monitor eintragen.`
-        : `„${r.user.name}“ angelegt – jetzt die Rechte je Person festlegen.`);
+        : `„${r.user.name}“ ${auth.ad ? 'eingetragen' : 'angelegt'} – jetzt die Rechte je Person festlegen.` +
+          (auth.ad ? ` Anmelden kann sich das Konto, sobald es in der AD-Gruppe ${auth.userGroup} ist.` : ''));
       nuName.value = nuPw.value = '';
       await loadUsers();
     } catch (e) { uMsg(e.message, true); }
@@ -2443,12 +2465,15 @@
     sDlg.close();
     uMsg('');
     fillRoleOptions();
-    document.querySelector('#usersDialog .hint').textContent = isAdmin()
+    document.querySelector('#usersDialog .hint').textContent = (auth.ad
+      ? `Anmeldung mit Windows-Konto: Zugang hat, wer in der AD-Gruppe ${auth.userGroup} ist; Mitglieder von ${auth.adminGroup} sind ` +
+        'Administrator. Konten erscheinen hier nach der ersten Anmeldung – oder du trägst sie vorab ein, um schon Rechte zu vergeben. '
+      : '') + (isAdmin()
       ? 'Rechte je Person: – nicht sichtbar · sehen · bearbeiten. Administratoren sehen und bearbeiten alles. Gruppen-Admins ' +
         'bearbeiten die Personen der ihnen zugeordneten Gruppen und verwalten dafür Benutzer. Anzeige-Zugänge (Monitor) ' +
         'können nur sehen und melden sich über ihren Link an. Änderungen werden sofort gespeichert.'
       : 'Du vergibst hier Rechte für die Personen deiner Gruppen (– · sehen · bearbeiten). Passwort zurücksetzen und ' +
-        'Löschen geht bei Zugängen, die du selbst angelegt hast. Änderungen werden sofort gespeichert.';
+        'Löschen geht bei Zugängen, die du selbst angelegt hast. Änderungen werden sofort gespeichert.');
     try { await loadUsers(); uDlg.showModal(); } catch (e) { showToast(e.message); }
   });
   document.getElementById('usersCloseBtn').addEventListener('click', () => uDlg.close());

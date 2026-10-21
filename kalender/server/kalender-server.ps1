@@ -6,14 +6,28 @@
   Läuft mit Windows PowerShell 5.1 (Windows Server 2025 Core) und PowerShell 7.
   Keine Installation nötig. Daten liegen als JSON im Datenordner, tägliche Sicherungen in "backup".
 
-  Rollen:  admin   – sieht/bearbeitet alles, verwaltet Benutzer, Personen, Kategorien, Feiertage
-           user    – je Person: keine / sehen (view) / bearbeiten (edit)
-           display – nur lesen (Monitor), Anmeldung über geheimen Anzeige-Link
+  Rollen:  admin      – sieht/bearbeitet alles, verwaltet Benutzer, Personen, Kategorien, Feiertage
+           groupadmin – verwaltet die ihm zugeordneten Gruppen (Personen, Einträge, Benutzerrechte)
+           user       – je Person: keine / sehen (view) / bearbeiten (edit)
+           display    – nur lesen (Monitor), Anmeldung über geheimen Anzeige-Link
+
+  Anmeldung: mit dem Windows-/AD-Konto. Zugang hat, wer (auch verschachtelt) Mitglied der Gruppe
+  -AdNutzerGruppe oder -AdAdminGruppe ist; Mitglieder der Admin-Gruppe sind Administrator.
+  Lokal gibt es nur noch den Notzugang "admin" (und die Anzeige-Links). Mit -OhneAD wie früher
+  nur lokale Konten.
 
 .PARAMETER Port
   TCP-Port (Standard 8080).
 .PARAMETER DataDir
   Datenordner (Standard: .\daten neben diesem Skript).
+.PARAMETER AdNutzerGruppe
+  AD-Gruppe, deren Mitglieder sich anmelden dürfen (Standard L_Kalender_Nutzer).
+.PARAMETER AdAdminGruppe
+  AD-Gruppe, deren Mitglieder Administratoren sind (Standard L_Kalender_Admins).
+.PARAMETER OhneAD
+  Keine AD-Anmeldung, nur lokale Konten.
+.PARAMETER AdNachpruefungMinuten
+  Wie oft bei laufender Sitzung geprüft wird, ob das AD-Konto noch berechtigt ist (Standard 15).
 .PARAMETER ResetAdmin
   Setzt das Passwort des Benutzers "admin" neu (legt ihn ggf. an), schreibt es in
   ERSTES-ADMIN-PASSWORT.txt im Datenordner und beendet sich.
@@ -24,7 +38,12 @@
 param(
   [int]$Port = 8080,
   [string]$DataDir = (Join-Path $PSScriptRoot 'daten'),
-  [switch]$ResetAdmin
+  [string]$AdNutzerGruppe = 'L_Kalender_Nutzer',
+  [string]$AdAdminGruppe = 'L_Kalender_Admins',
+  [switch]$OhneAD,
+  [switch]$ResetAdmin,
+  [int]$AdNachpruefungMinuten = 15,
+  [string]$AdTestDatei = ''   # nur für Tests: AD aus einer JSON-Datei nachbilden
 )
 
 $ErrorActionPreference = 'Stop'
@@ -40,6 +59,8 @@ $Regions      = @('NONE','DE','BW','BY','BE','BB','HB','HH','HE','MV','NI','NW',
 $UserSessionHours = 12
 $DisplaySessionDays = 365
 $MinPasswordLength = 8
+$UseAD = -not $OhneAD
+$AdRecheckMinutes = $AdNachpruefungMinuten   # so oft wird bei laufender Sitzung geprüft, ob das AD-Konto noch berechtigt ist
 
 New-Item -ItemType Directory -Force -Path $DataDir, $BackupDir | Out-Null
 
@@ -132,6 +153,92 @@ function Get-CleanText($s, [int]$max) {
   $t = ([string]$s).Trim() -replace '[\x00-\x1f]', ''
   if ($t.Length -gt $max) { $t = $t.Substring(0, $max) }
   return $t
+}
+
+# ---------------------------------------------------------------- Active Directory
+# Ergebnis der Funktionen: @{ ok; sam; sid; display; user (darf rein); admin (Admin-Gruppe); error }
+
+$script:AdMock = $null
+if ($UseAD -and $AdTestDatei) { $script:AdMock = Get-Content $AdTestDatei -Raw -Encoding UTF8 | ConvertFrom-Json }
+if ($UseAD -and -not $AdTestDatei) {
+  try { Add-Type -AssemblyName System.DirectoryServices.AccountManagement }
+  catch { Write-Host "AD-Unterstützung nicht verfügbar: $($_.Exception.Message)" }
+}
+
+# "DOMÄNE\name" → "name"
+function Get-AdLoginName([string]$name) { if ($name -match '\\') { return ($name -split '\\')[-1] } return $name }
+
+function Get-AdRolesFromNames($names) {
+  $isAdmin = @($names) -contains $AdAdminGruppe
+  return @{ user = ($isAdmin -or (@($names) -contains $AdNutzerGruppe)); admin = $isAdmin }
+}
+
+function Get-AdMockAccount([string]$by, [string]$value) {
+  $script:AdMock = Get-Content $AdTestDatei -Raw -Encoding UTF8 | ConvertFrom-Json   # bei jedem Aufruf neu (Tests ändern sie)
+  foreach ($a in @($script:AdMock.users)) {
+    if (($by -eq 'sid' -and $a.sid -eq $value) -or ($by -eq 'name' -and ($a.sam -ieq $value -or $a.upn -ieq $value))) { return $a }
+  }
+  return $null
+}
+
+# Gruppenzugehörigkeit (inkl. verschachtelter Gruppen) eines UserPrincipal
+function Get-AdMembership($ctx, $up) {
+  $names = @()
+  try {
+    $names = @($up.GetAuthorizationGroups() | ForEach-Object { $_.SamAccountName })
+  } catch {
+    # Fallback, falls einzelne Gruppen nicht auflösbar sind: die beiden Gruppen direkt prüfen
+    foreach ($g in @($AdNutzerGruppe, $AdAdminGruppe)) {
+      try {
+        $gp = [System.DirectoryServices.AccountManagement.GroupPrincipal]::FindByIdentity($ctx, $g)
+        if ($gp -and @($gp.GetMembers($true) | Where-Object { $_.Sid -eq $up.Sid }).Count -gt 0) { $names += $g }
+      } catch { }
+    }
+  }
+  return Get-AdRolesFromNames $names
+}
+
+function ConvertTo-AdResult($up, $roles) {
+  return @{ ok = $true; sam = [string]$up.SamAccountName; sid = [string]$up.Sid.Value; display = [string]$up.DisplayName
+            user = $roles.user; admin = $roles.admin; enabled = ($up.Enabled -ne $false) }
+}
+
+# Benutzername + Passwort am AD prüfen
+function Test-AdLogin([string]$name, [string]$pw) {
+  $name = Get-AdLoginName $name
+  if (-not $name -or -not $pw) { return @{ ok = $false } }   # leeres Passwort niemals annehmen
+  if ($script:AdMock) {
+    $a = Get-AdMockAccount 'name' $name
+    if (-not $a -or $a.password -cne $pw) { return @{ ok = $false } }
+    $r = Get-AdRolesFromNames $a.groups
+    return @{ ok = $true; sam = $a.sam; sid = $a.sid; display = $a.display; user = $r.user; admin = $r.admin; enabled = ($a.enabled -ne $false) }
+  }
+  $ctx = New-Object System.DirectoryServices.AccountManagement.PrincipalContext([System.DirectoryServices.AccountManagement.ContextType]::Domain)
+  try {
+    if (-not $ctx.ValidateCredentials($name, $pw, [System.DirectoryServices.AccountManagement.ContextOptions]::Negotiate)) { return @{ ok = $false } }
+    $up = [System.DirectoryServices.AccountManagement.UserPrincipal]::FindByIdentity($ctx, $name)
+    if (-not $up) { return @{ ok = $false } }
+    return ConvertTo-AdResult $up (Get-AdMembership $ctx $up)
+  } finally { $ctx.Dispose() }
+}
+
+# Konto ohne Passwort nachschlagen (per SID oder Name) – für Nachprüfung und Vorab-Anlegen
+function Find-AdAccount([string]$by, [string]$value) {
+  if ($by -eq 'name') { $value = Get-AdLoginName $value }
+  if ($script:AdMock) {
+    $a = Get-AdMockAccount $by $value
+    if (-not $a) { return @{ ok = $false } }
+    $r = Get-AdRolesFromNames $a.groups
+    return @{ ok = $true; sam = $a.sam; sid = $a.sid; display = $a.display; user = $r.user; admin = $r.admin; enabled = ($a.enabled -ne $false) }
+  }
+  $ctx = New-Object System.DirectoryServices.AccountManagement.PrincipalContext([System.DirectoryServices.AccountManagement.ContextType]::Domain)
+  try {
+    # per SID gezielt; per Name sucht FindByIdentity in Anmeldename, UPN usw.
+    $up = $(if ($by -eq 'sid') { [System.DirectoryServices.AccountManagement.UserPrincipal]::FindByIdentity($ctx, [System.DirectoryServices.AccountManagement.IdentityType]::Sid, $value) }
+            else { [System.DirectoryServices.AccountManagement.UserPrincipal]::FindByIdentity($ctx, $value) })
+    if (-not $up) { return @{ ok = $false } }
+    return ConvertTo-AdResult $up (Get-AdMembership $ctx $up)
+  } finally { $ctx.Dispose() }
 }
 
 # ---------------------------------------------------------------- Kalenderdaten
@@ -314,6 +421,7 @@ function ConvertTo-UserRecord($u) {
     adminGroups = @(@(Get-Prop $u 'adminGroups') | Where-Object { Test-Id $_ })   # nur Gruppen-Admin
     myGroups = @(@(Get-Prop $u 'myGroups') | Where-Object { $_ })               # persönliche Gruppen
     createdBy = Get-Prop $u 'createdBy'
+    source = $(if ((Get-Prop $u 'source') -eq 'ad') { 'ad' } else { 'local' }); sid = Get-Prop $u 'sid'
   }
 }
 
@@ -328,7 +436,7 @@ function Reset-AdminPassword {
   if (-not $admin) {
     $admin = [ordered]@{ id = 'u' + (New-RandomHex 6); name = 'admin'; role = 'admin'; salt = $null; hash = $null
                          iterations = $null; mustChange = $true; key = $null; perms = [ordered]@{}
-                         adminGroups = @(); myGroups = @(); createdBy = $null }
+                         adminGroups = @(); myGroups = @(); createdBy = $null; source = 'local'; sid = $null }
     [void]$script:Users.Add($admin)
   }
   $pw = New-RandomPassword
@@ -366,6 +474,7 @@ function Get-PublicUser($u) {
   $o = [ordered]@{ id = $u.id; name = $u.name; role = $u.role; mustChange = [bool]$u.mustChange; perms = $u.perms }
   if ($u.role -eq 'display') { $o.key = $u.key }
   if ($u.role -eq 'groupadmin') { $o.adminGroups = @($u.adminGroups) }
+  $o.source = $u.source
   return $o
 }
 
@@ -411,9 +520,17 @@ function New-Session($user) {
   $token = New-RandomHex 32
   $isDisplay = $user.role -eq 'display'
   $exp = $(if ($isDisplay) { (Get-Date).AddDays($DisplaySessionDays) } else { (Get-Date).AddHours($UserSessionHours) })
-  $script:Sessions[$token] = @{ userId = $user.id; expires = $exp; display = $isDisplay }
+  $script:Sessions[$token] = @{ userId = $user.id; expires = $exp; display = $isDisplay; checked = (Get-Date) }
   $maxAge = $(if ($isDisplay) { "; Max-Age=$($DisplaySessionDays * 86400)" } else { '' })
   return "kal=$token; Path=/; HttpOnly; SameSite=Strict$maxAge"
+}
+
+# Rolle eines AD-Kontos an die Gruppen anpassen: Admin-Gruppe → admin; sonst bleibt user/groupadmin
+function Update-AdRole($u, $a) {
+  $old = $u.role
+  if ($a.admin) { $u.role = 'admin' }
+  elseif ($u.role -eq 'admin') { $u.role = 'user' }
+  if ($u.role -ne $old) { Save-Users; Write-Log "Rolle von $($u.name) laut AD: $old → $($u.role)" }
 }
 
 function Remove-UserSessions([string]$userId, [string]$exceptToken) {
@@ -430,6 +547,18 @@ function Get-SessionUser($req, [ref]$tokenOut) {
   if ($s.expires -lt (Get-Date)) { $script:Sessions.Remove($c.Value); return $null }
   $u = Find-UserById $s.userId
   if (-not $u) { $script:Sessions.Remove($c.Value); return $null }
+  # AD-Konten: alle paar Minuten prüfen, ob sie noch existieren, aktiv und in der Gruppe sind
+  if ($UseAD -and $u.source -eq 'ad' -and $s.checked -lt (Get-Date).AddMinutes(-$AdRecheckMinutes)) {
+    try {
+      $a = Find-AdAccount 'sid' $u.sid
+      $s.checked = Get-Date
+      if (-not $a.ok -or -not $a.enabled -or -not $a.user) {
+        Write-Log "Sitzung beendet (AD-Konto nicht mehr berechtigt): $($u.name)"
+        $script:Sessions.Remove($c.Value); return $null
+      }
+      Update-AdRole $u $a
+    } catch { Write-Log "AD-Nachprüfung für $($u.name) nicht möglich: $($_.Exception.Message)" }   # bei AD-Störung Sitzung behalten
+  }
   if (-not $s.display) { $s.expires = (Get-Date).AddHours($UserSessionHours) }   # gleitend verlängern
   if ($tokenOut) { $tokenOut.Value = $c.Value }
   return $u
@@ -588,22 +717,63 @@ function Invoke-Request($ctx) {
       Send-Json $ctx 200 @{ user = (Get-PublicUser $u) } (New-Session $u)
       return
     }
-    $name = Get-CleanText (Get-Prop $body 'name') 30
+    $name = Get-CleanText (Get-Prop $body 'name') 60
     $pw = [string](Get-Prop $body 'password')
     $fk = $name.ToLowerInvariant()
     $f = $script:Fails[$fk]
     if ($f -and $f.until -gt (Get-Date)) { throw (New-HttpError 429 'Zu viele Fehlversuche. Bitte 1 Minute warten.') }
-    $u = Find-UserByName $name
-    if (-not $u -or $u.role -eq 'display' -or -not (Test-UserPassword $u $pw)) {
+    $fail = {
+      param([string]$why, [int]$status, [string]$msg)
       if (-not $f) { $f = @{ n = 0; until = (Get-Date) }; $script:Fails[$fk] = $f }
       $f.n++
       if ($f.n -ge 5) { $f.until = (Get-Date).AddMinutes(1); $f.n = 0 }
-      Write-Log "Anmeldung fehlgeschlagen: $name ($($req.RemoteEndPoint.Address))"
-      throw (New-HttpError 401 'Benutzername oder Passwort falsch.')
+      Write-Log "Anmeldung fehlgeschlagen: $name ($($req.RemoteEndPoint.Address)) – $why"
+      throw (New-HttpError $status $msg)
+    }
+    $local = Find-UserByName $name
+    # Lokale Anmeldung: mit AD nur noch der Notzugang "admin"; ohne AD alle lokalen Konten
+    $localAllowed = $local -and $local.source -ne 'ad' -and $local.role -ne 'display' -and $local.hash -and
+                    (-not $UseAD -or $local.name -ieq 'admin')
+    if ($localAllowed) {
+      if (-not (Test-UserPassword $local $pw)) { & $fail 'Passwort falsch' 401 'Benutzername oder Passwort falsch.' }
+      $u = $local
+    } elseif (-not $UseAD) {
+      & $fail 'unbekannt' 401 'Benutzername oder Passwort falsch.'
+    } else {
+      try { $a = Test-AdLogin $name $pw }
+      catch {
+        Write-Log "AD nicht erreichbar bei Anmeldung von ${name}: $($_.Exception.Message)"
+        throw (New-HttpError 503 'Die Windows-Anmeldung (Active Directory) ist gerade nicht erreichbar. Bitte später erneut versuchen.')
+      }
+      if (-not $a.ok) { & $fail 'AD: Name/Passwort falsch' 401 'Benutzername oder Passwort falsch.' }
+      if (-not $a.enabled) { & $fail 'AD-Konto gesperrt' 403 'Dieses Windows-Konto ist gesperrt.' }
+      if (-not $a.user) { & $fail "nicht in $AdNutzerGruppe/$AdAdminGruppe" 403 "Kein Zugriff: Das Konto ist nicht in der Gruppe $AdNutzerGruppe. Bitte bei der IT freischalten lassen." }
+      # Kalender-Konto zum AD-Konto: per SID, sonst ein gleichnamiges altes lokales Konto übernehmen, sonst neu
+      $u = $script:Users | Where-Object { $_.source -eq 'ad' -and $_.sid -eq $a.sid } | Select-Object -First 1
+      if (-not $u) {
+        $u = $script:Users | Where-Object { $_.name -ieq $a.sam -and $_.name -ine 'admin' -and $_.role -ne 'display' } | Select-Object -First 1
+        if ($u) { Write-Log "Lokales Konto $($u.name) wird mit dem AD-Konto verknüpft." }
+        else {
+          $u = [ordered]@{ id = 'u' + (New-RandomHex 6); name = $a.sam; role = 'user'; salt = $null; hash = $null; iterations = $null
+                           mustChange = $false; key = $null; perms = [ordered]@{}; adminGroups = @(); myGroups = @(); createdBy = $null
+                           source = 'ad'; sid = $a.sid }
+          [void]$script:Users.Add($u)
+          Write-Log "Neues AD-Konto im Kalender: $($a.sam)"
+        }
+      }
+      $u.source = 'ad'; $u.sid = $a.sid; $u.name = $a.sam
+      $u.salt = $null; $u.hash = $null; $u.iterations = $null; $u.mustChange = $false
+      Update-AdRole $u $a
+      Save-Users
     }
     $script:Fails.Remove($fk)
-    Write-Log "Anmeldung: $($u.name)"
+    Write-Log "Anmeldung: $($u.name)$(if ($u.source -eq 'ad') { ' (AD)' })"
     Send-Json $ctx 200 @{ user = (Get-PublicUser $u) } (New-Session $u)
+    return
+  }
+  # Anmeldeart für das Anmeldefenster (ohne Sitzung abrufbar)
+  if ($path -eq '/api/info' -and $method -eq 'GET') {
+    Send-Json $ctx 200 @{ ad = $UseAD; userGroup = $AdNutzerGruppe; adminGroup = $AdAdminGruppe } $null
     return
   }
 
@@ -620,6 +790,7 @@ function Invoke-Request($ctx) {
 
   if ($path -eq '/api/password' -and $method -eq 'POST') {
     Assert-Editor $user
+    if ($user.source -eq 'ad') { throw (New-HttpError 400 'Das Passwort deines Windows-Kontos änderst du wie gewohnt in Windows (Strg+Alt+Entf).') }
     $body = Read-Body $req
     $old = [string](Get-Prop $body 'old'); $new = [string](Get-Prop $body 'new')
     if (-not (Test-UserPassword $user $old)) { throw (New-HttpError 400 'Das bisherige Passwort stimmt nicht.') }
@@ -801,7 +972,15 @@ function Invoke-Request($ctx) {
   if ($path -eq '/api/users' -and $method -eq 'POST') {
     Assert-UserManager $user
     $body = Read-Body $req
-    $name = Get-CleanText (Get-Prop $body 'name') 30
+    $name = Get-CleanText (Get-Prop $body 'name') 60
+    $adAccount = $null
+    if ($UseAD -and (Get-Prop $body 'role') -ne 'display') {
+      # AD-Konto vorab eintragen, damit Rechte schon vor der ersten Anmeldung vergeben werden können
+      try { $adAccount = Find-AdAccount 'name' $name } catch { throw (New-HttpError 503 'Active Directory nicht erreichbar.') }
+      if (-not $adAccount.ok) { throw (New-HttpError 400 "Im Active Directory gibt es kein Konto '$name'.") }
+      if ($script:Users | Where-Object { $_.source -eq 'ad' -and $_.sid -eq $adAccount.sid }) { throw (New-HttpError 400 'Dieses AD-Konto ist bereits eingetragen.') }
+      $name = $adAccount.sam
+    }
     if (-not (Test-UserName $name)) { throw (New-HttpError 400 'Benutzername: 1–30 Zeichen (Buchstaben, Ziffern, Punkt, Leerzeichen, - und _).') }
     if (Find-UserByName $name) { throw (New-HttpError 400 'Diesen Benutzernamen gibt es schon.') }
     $role = Get-Prop $body 'role'
@@ -809,8 +988,13 @@ function Invoke-Request($ctx) {
     if ($allowed -notcontains $role) { $role = 'user' }
     $u = [ordered]@{ id = 'u' + (New-RandomHex 6); name = $name; role = $role; salt = $null; hash = $null
                      iterations = $null; mustChange = $false; key = $null; perms = [ordered]@{}
-                     adminGroups = @(); myGroups = @(); createdBy = $user.id }
-    if ($role -eq 'display') {
+                     adminGroups = @(); myGroups = @(); createdBy = $user.id; source = 'local'; sid = $null }
+    if ($adAccount) {
+      $u.source = 'ad'; $u.sid = $adAccount.sid
+      if ($role -eq 'admin') { $role = 'user' }            # Admin kommt aus der AD-Gruppe
+      if ($adAccount.admin) { $role = 'admin' }
+      $u.role = $role
+    } elseif ($role -eq 'display') {
       $u.key = New-RandomHex 24
     } else {
       $pw = [string](Get-Prop $body 'password')
@@ -823,7 +1007,7 @@ function Invoke-Request($ctx) {
     if ($role -eq 'groupadmin') { Set-AdminGroups $u (Get-Prop $body 'adminGroups') }
     [void]$script:Users.Add($u)
     Save-Users
-    Write-Log "Benutzer angelegt: $name ($role) von $($user.name)"
+    Write-Log "Benutzer angelegt: $name ($role$(if ($adAccount) { ', AD' })) von $($user.name)"
     Send-Json $ctx 200 @{ user = (Get-UserForManager $user $u) } $null
     return
   }
@@ -843,6 +1027,9 @@ function Invoke-Request($ctx) {
         $role = Get-Prop $body 'role'
         if ($role -and $role -ne $target.role) {
           if (@('admin', 'groupadmin', 'user') -notcontains $role -or $target.role -eq 'display') { throw (New-HttpError 400 'Diese Rollenänderung ist nicht möglich.') }
+          if ($target.source -eq 'ad' -and ($role -eq 'admin' -or $target.role -eq 'admin')) {
+            throw (New-HttpError 400 "Administrator wird man über die AD-Gruppe $AdAdminGruppe.")
+          }
           if ($target.role -eq 'admin' -and (Get-AdminCount) -le 1) { throw (New-HttpError 400 'Es muss mindestens einen Administrator geben.') }
           $target.role = $role
         }
@@ -856,6 +1043,7 @@ function Invoke-Request($ctx) {
     if (-not (Test-OwnsUser $user $target)) { throw (New-HttpError 403 'Nur selbst angelegte Zugänge.') }
     if ($action -eq '/password' -and $method -eq 'POST') {
       if ($target.role -eq 'display') { throw (New-HttpError 400 'Die Anzeige hat kein Passwort.') }
+      if ($target.source -eq 'ad') { throw (New-HttpError 400 'AD-Passwörter werden im Active Directory zurückgesetzt.') }
       $pw = [string](Get-Prop $body 'password')
       if ($pw.Length -lt $MinPasswordLength) { throw (New-HttpError 400 "Das Passwort muss mindestens $MinPasswordLength Zeichen haben.") }
       Set-UserPassword $target $pw

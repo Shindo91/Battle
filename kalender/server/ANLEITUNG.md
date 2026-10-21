@@ -91,6 +91,27 @@ In beiden Fällen bleiben die Kalenderdaten (`daten`) unverändert. Installierte
 `daten\installierte-version.txt`, Protokoll: `daten\update.log`. Eine neue Seite laden alle Browser
 und der Monitor selbst nach.
 
+## Anmeldung mit Windows-Konten (Active Directory)
+
+Standardmäßig melden sich alle mit ihrem **Windows-Benutzernamen und -Passwort** an:
+
+- Zugang hat, wer (auch verschachtelt) in der AD-Gruppe **`L_Kalender_Nutzer`** ist.
+- Mitglieder von **`L_Kalender_Admins`** sind automatisch **Administrator** (auch ohne Mitgliedschaft in `L_Kalender_Nutzer`).
+- Lokal gibt es nur noch den **Notzugang `admin`** (z. B. falls das AD nicht erreichbar ist) und die Anzeige-Links.
+- Beim ersten Anmelden wird das Konto im Kalender angelegt – **ohne Rechte**. Der Admin vergibt sie unter
+  *Benutzer verwalten* oder trägt Konten dort **vorab** ein (Windows-Benutzername), um Rechte schon vorher zu vergeben.
+  Ein früheres lokales Konto mit gleichem Namen wird beim ersten Windows-Login übernommen (inkl. Rechten).
+- Wird jemand aus der Gruppe entfernt oder im AD gesperrt, endet seine Sitzung spätestens nach 15 Minuten.
+- Passwörter werden im AD geändert/zurückgesetzt, nicht im Kalender.
+- Andere Gruppennamen: `installieren.ps1 -AdNutzerGruppe Gruppe1 -AdAdminGruppe Gruppe2`.
+  Ohne AD (nur lokale Konten): `installieren.ps1 -OhneAD`.
+
+**Achtung:** Ohne HTTPS werden die Windows-Passwörter unverschlüsselt im Netz übertragen. Mittelfristig ein
+Zertifikat einrichten (siehe Abschnitt Sicherheit).
+
+Voraussetzung: Der Server ist Mitglied der Domäne (der Dienst läuft als SYSTEM = Computerkonto und fragt den
+Domänencontroller ab). Fehlermeldungen stehen in `daten\server.log`.
+
 ## 3. Kalender einrichten (im Browser als admin)
 
 1. **Einstellungen** → Personen benennen/anlegen, **Gruppen** bilden, Kategorien, Bundesland für Feiertage,
@@ -101,7 +122,7 @@ und der Monitor selbst nach.
 2. Vorhandene Einträge aus der Einzelplatz-Version übernehmen: dort *Einstellungen → Exportieren*,
    hier *Einstellungen → Importieren*.
 3. **Einstellungen → Benutzer verwalten**:
-   - **Benutzer** anlegen (Name + Start-Passwort). Beim ersten Anmelden muss jeder sein eigenes Passwort setzen.
+   - **Benutzer** melden sich mit dem Windows-Konto an (siehe oben) oder werden vorab eingetragen.
    - Je Person festlegen: **–** (nicht sichtbar), **sehen** oder **bearbeiten**.
    - **Administrator**: sieht und bearbeitet alles und verwaltet Benutzer.
    - **Gruppen-Admin**: Der Admin ordnet ihm in der Benutzerliste Gruppen zu („verwaltet: …“). Er sieht und
