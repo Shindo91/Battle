@@ -157,6 +157,11 @@ try {
 } catch {
   Write-Host ''
   Write-Host "Fernzugriff auf $Server nicht möglich ($($_.Exception.Message))." -ForegroundColor Yellow
+  if ($Server -match '^\d{1,3}(\.\d{1,3}){3}$') {
+    Write-Host 'Hinweis: Fernzugriff über eine IP-Adresse muss am PC einmalig erlaubt werden (PowerShell als Administrator):'
+    Write-Host "  Set-Item WSMan:\localhost\Client\TrustedHosts -Value $Server -Concatenate -Force" -ForegroundColor Cyan
+    Write-Host '  und dann vom-pc-aktualisieren.ps1 mit -Credential (Get-Credential) aufrufen.'
+  }
   Write-Host 'Die Dateien liegen bereit. Bitte auf dem Server in einer PowerShell als Administrator ausführen:'
   Write-Host ''
   Write-Host "  $localCmd" -ForegroundColor Cyan
