@@ -19,6 +19,9 @@
     --strong-line: #c9ced6;
     --hover: #dbeafe;
     --sel: #93c5fd;
+    --warn: #f59e0b;
+    --warn-bg: #fde68a;
+    --warn-text: #78350f;
     --wd-bg: #fafbfc;
     --invalid-a: #f3f4f6;
     --invalid-b: #e5e7eb;
@@ -32,7 +35,7 @@
     :root:not([data-theme="light"]) {
       --bg: #101318; --panel: #1b2028; --text: #f3f4f6; --muted: #c4cbd6; --line: #3a424f;
       --weekend: #282f3a; --holiday: #4c1f2b; --holiday-text: #ff9db0; --today: #f43f5e; --accent: #4f8ff7;
-      --strong-line: #5d6778; --hover: #24456f; --sel: #2f5f9e; --wd-bg: #232933; --invalid-a: #14181e; --invalid-b: #1f242c;
+      --strong-line: #5d6778; --hover: #24456f; --sel: #2f5f9e; --warn: #f59e0b; --warn-bg: #5a3d06; --warn-text: #fcd34d; --wd-bg: #232933; --invalid-a: #14181e; --invalid-b: #1f242c;
       --input-border: #4b5464; --danger: #fca5a5; --danger-border: #991b1b;
       color-scheme: dark;
     }
@@ -40,7 +43,7 @@
   :root[data-theme="dark"] {
     --bg: #101318; --panel: #1b2028; --text: #f3f4f6; --muted: #c4cbd6; --line: #3a424f;
     --weekend: #282f3a; --holiday: #4c1f2b; --holiday-text: #ff9db0; --today: #f43f5e; --accent: #4f8ff7;
-    --strong-line: #5d6778; --hover: #24456f; --sel: #2f5f9e; --wd-bg: #232933; --invalid-a: #14181e; --invalid-b: #1f242c;
+    --strong-line: #5d6778; --hover: #24456f; --sel: #2f5f9e; --warn: #f59e0b; --warn-bg: #5a3d06; --warn-text: #fcd34d; --wd-bg: #232933; --invalid-a: #14181e; --invalid-b: #1f242c;
     --input-border: #4b5464; --danger: #fca5a5; --danger-border: #991b1b;
     color-scheme: dark;
   }
@@ -229,8 +232,8 @@
   form .row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
   form .row.inline { flex-direction: row; gap: 12px; }
   form .row.inline > div { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-  label.cap { font-size: .85rem; font-weight: 600; color: var(--muted); }
-  input[type=text], input[type=date], select {
+  .cap { font-size: .85rem; font-weight: 600; color: var(--muted); }
+  input[type=text], input[type=date], input.num, select {
     font: inherit;
     padding: 7px 9px;
     border: 1px solid var(--input-border);
@@ -248,6 +251,14 @@
   }
   .swatch.sel { border-color: var(--text); box-shadow: 0 0 0 2px var(--panel) inset; }
   input[type=color] { width: 36px; height: 30px; border: none; padding: 0; background: none; cursor: pointer; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chips button { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: .9rem; }
+  .chips button i { width: 10px; height: 10px; border-radius: 50%; }
+  .chips button.active { border-color: var(--text); box-shadow: inset 0 0 0 1px var(--text); font-weight: 600; }
+  .seg.small button { flex: 1; padding: 5px 8px; font-size: .9rem; }
+  .seg.small { display: flex; }
+  .seg button:disabled { opacity: .45; cursor: not-allowed; }
+  .hint { margin: -4px 0 8px; font-size: .85rem; color: var(--muted); }
   .quick { display: flex; gap: 6px; flex-wrap: wrap; }
   .quick button { flex: 1; padding: 5px 8px; font-size: .9rem; }
   .quick button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
@@ -266,6 +277,68 @@
     .legend { margin-left: 4px; gap: 10px; }
   }
   .legend span.off { opacity: .4; text-decoration: line-through; }
+
+  /* Info-Leiste unten */
+  footer#info {
+    display: flex; align-items: center; gap: 16px;
+    padding: 6px 14px 8px; background: var(--panel); border-top: 1px solid var(--line);
+    font-size: clamp(12px, 1.5vh, 17px);
+  }
+  .info-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .info-line { display: flex; gap: 6px 16px; align-items: center; white-space: nowrap; overflow: hidden; }
+  .info-line .lbl { font-weight: 700; min-width: 6.5em; color: var(--muted); text-transform: uppercase; font-size: .8em; letter-spacing: .04em; }
+  .info-line .item { display: inline-flex; align-items: center; gap: 6px; }
+  .info-line .item i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .info-line .item small { color: var(--muted); font-size: .9em; }
+  .info-line .warn { background: var(--warn-bg); color: var(--warn-text); padding: 1px 8px; border-radius: 4px; font-weight: 700; }
+  .info-line .none { color: var(--muted); }
+  .catlegend { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: flex-end; max-width: 40%; font-size: .9em; }
+  .catlegend span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .catlegend i { width: 12px; height: 12px; border-radius: 3px; }
+
+  /* Alle abwesend */
+  .wd.allaway { box-shadow: inset 0 -4px 0 var(--warn); }
+  .wd.allaway:not(.today):not(.holiday) { background: var(--warn-bg); color: var(--warn-text); }
+
+  /* Balken: Ränder zum Ziehen, Serien */
+  .bar { touch-action: none; }
+  .bar::before, .bar::after { content: ''; position: absolute; top: 0; bottom: 0; width: 7px; cursor: ew-resize; }
+  .bar::before { left: 0; }
+  .bar::after { right: 0; }
+  .bar.cont-left::before, .bar.cont-right::after { display: none; }
+  .bar { position: relative; cursor: grab; }
+  #calendar.moving, #calendar.moving * { cursor: grabbing !important; }
+  .bar.repeat { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.18) 0 6px, transparent 6px 12px); }
+
+  /* Rückgängig-Hinweis */
+  #toast {
+    position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 50;
+    display: flex; align-items: center; gap: 14px; padding: 10px 12px 10px 16px;
+    background: var(--text); color: var(--panel); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.3);
+  }
+  #toast[hidden] { display: none; }
+  #toast button { background: transparent; color: inherit; border-color: currentColor; padding: 4px 10px; }
+
+  /* Drucken: helles Design, A4 quer, nur Kalender + Kategorien */
+  @page { size: A4 landscape; margin: 8mm; }
+  @media print {
+    html, body { height: auto; overflow: visible; background: #fff; }
+    body { display: block; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    header { border: none; padding: 0 0 3mm; }
+    header > :not(h1) { display: none !important; }
+    header h1 { text-align: left; font-size: 16pt; }
+    main { padding: 0; height: 176mm; }
+    #calendar { height: 100%; }
+    .day:hover { background: inherit !important; }
+    footer#info { border: none; padding: 2mm 0 0; }
+    .info-text, #toast { display: none !important; }
+    .catlegend { max-width: none; justify-content: flex-start; }
+    /* Papierbreite: Datumszeile immer kompakt („Mo 02.“) */
+    #calendar:not(.view-month):not(.view-week) .wd { font-size: 6.5pt !important; }
+    #calendar .wd .mo { display: none; }
+    .wd .dt { margin-left: .2em; }
+  }
 </style>
 </head>
 <body>
@@ -286,16 +359,33 @@
   <div class="spacer"></div>
   <button class="primary" id="addBtn">+ Eintrag</button>
   <button id="settingsBtn">Einstellungen</button>
+  <button id="printBtn" title="Aktuelle Ansicht drucken / als PDF speichern" aria-label="Drucken">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+  </button>
   <button id="themeBtn"></button>
   <button id="fullscreenBtn" title="Vollbild">⛶</button>
 </header>
 
 <main><div id="calendar"></div></main>
 
+<footer id="info">
+  <div class="info-text">
+    <div class="info-line" id="infoToday"></div>
+    <div class="info-line" id="infoNext"></div>
+  </div>
+  <div class="catlegend" id="catLegend"></div>
+</footer>
+
+<div id="toast" hidden><span></span><button type="button">Rückgängig</button></div>
+
 <!-- Eintrag anlegen / bearbeiten -->
 <dialog id="entryDialog">
   <form id="entryForm" method="dialog">
     <h2 id="entryTitle">Neuer Eintrag</h2>
+    <div class="row">
+      <span class="cap">Kategorie</span>
+      <div class="chips" id="fCats"></div>
+    </div>
     <div class="row">
       <label class="cap" for="fLabel">Bezeichnung</label>
       <input type="text" id="fLabel" maxlength="60" placeholder="z. B. Urlaub, Kur, Schulung" required>
@@ -318,6 +408,24 @@
         <button type="button" data-weeks="4">4 Wochen</button>
       </div>
     </div>
+    <div class="row">
+      <div class="seg small" id="fHalf" title="Halbe Tage sind nur bei eintägigen Einträgen möglich">
+        <button type="button" data-half="">Ganztägig</button>
+        <button type="button" data-half="am">Vormittag</button>
+        <button type="button" data-half="pm">Nachmittag</button>
+      </div>
+    </div>
+    <div class="row inline">
+      <div>
+        <label class="cap" for="fRepeat">Wiederholen</label>
+        <select id="fRepeat"></select>
+      </div>
+      <div id="fUntilBox">
+        <label class="cap" for="fUntil">Endet am (optional)</label>
+        <input type="date" id="fUntil">
+      </div>
+    </div>
+    <p class="hint" id="fSeriesHint">↻ Wiederkehrender Eintrag – Änderungen und Löschen gelten für die ganze Serie.</p>
     <div class="row">
       <span class="cap">Person(en)</span>
       <div class="persons" id="fPersons"></div>
@@ -343,6 +451,20 @@
       <span class="cap">Personen (Häkchen = im Kalender anzeigen)</span>
       <div id="sPersons"></div>
       <div><button type="button" id="sAddPerson">+ Person hinzufügen</button></div>
+    </div>
+    <div class="row">
+      <span class="cap">Kategorien (Häkchen = zählt als abwesend)</span>
+      <div id="sCats"></div>
+      <div><button type="button" id="sAddCat">+ Kategorie hinzufügen</button></div>
+    </div>
+    <div class="row">
+      <span class="cap">Am Monitor: bei Inaktivität zurück zu „Heute“</span>
+      <div class="settings-person">
+        <select id="sIdleView" style="flex:1"></select>
+        <span>nach</span>
+        <input type="number" id="sIdleMin" min="1" max="120" style="width:5em" class="num">
+        <span>Min.</span>
+      </div>
     </div>
     <div class="row">
       <label class="cap" for="sRegion">Feiertage</label>
@@ -381,7 +503,20 @@
       { id: 'p3', name: 'Person 3', color: '#dc2626' },
     ],
     entries: [],
+    categories: [],
   };
+  const DEFAULT_CATEGORIES = [
+    { id: 'c-urlaub', name: 'Urlaub', color: '#16a34a', absent: true },
+    { id: 'c-krank', name: 'Krank', color: '#dc2626', absent: true },
+    { id: 'c-schulung', name: 'Schulung', color: '#0891b2', absent: true },
+    { id: 'c-homeoffice', name: 'Homeoffice', color: '#9333ea', absent: false },
+    { id: 'c-termin', name: 'Termin', color: '#ca8a04', absent: false },
+  ];
+  // Ältere Speicherstände ohne Kategorien ergänzen
+  function normalize(s) {
+    if (!Array.isArray(s.categories)) s.categories = structuredClone(DEFAULT_CATEGORIES);
+    return s;
+  }
 
   // ---------- Speicher ----------
   function load() {
@@ -389,10 +524,10 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const s = JSON.parse(raw);
-        if (Array.isArray(s.persons) && s.persons.length && Array.isArray(s.entries)) return s;
+        if (Array.isArray(s.persons) && s.persons.length && Array.isArray(s.entries)) return normalize(s);
       }
     } catch (e) { /* ignorieren, Standard verwenden */ }
-    return structuredClone(DEFAULT_STATE);
+    return normalize(structuredClone(DEFAULT_STATE));
   }
   function save() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* nicht verfügbar */ }
@@ -406,6 +541,61 @@
   const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
   const todayIso = () => { const t = new Date(); return iso(t.getFullYear(), t.getMonth(), t.getDate()); };
   const fmt = s => { const [y, m, d] = s.split('-'); return `${d}.${m}.${y}`; };
+  const fmtShort = s => `${s.slice(8)}.${s.slice(5, 7)}.`;
+  const dayNum = s => { const [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d) / 864e5; };
+  const fromDayNum = n => { const d = new Date(n * 864e5); return iso(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); };
+  const shiftIso = (s, n) => fromDayNum(dayNum(s) + n);
+  const weekdayOf = s => WEEKDAYS[new Date(dayNum(s) * 864e5).getUTCDay()];
+
+  // ---------- Wiederkehrende Einträge ----------
+  // repeat: { freq: 'week', interval: 1|2 } | { freq: 'month' } | { freq: 'year' }, optional until (ISO)
+  const REPEATS = { '': 'Nie', week1: 'Wöchentlich', week2: 'Alle 2 Wochen', month: 'Monatlich', year: 'Jährlich' };
+  const repeatKey = r => !r ? '' : r.freq === 'week' ? 'week' + (r.interval || 1) : r.freq;
+  const repeatFromKey = k => !k ? null : k.startsWith('week') ? { freq: 'week', interval: +k.slice(4) } : { freq: k };
+
+  // Alle Vorkommen eines Eintrags, die den Bereich [rf, rt] berühren
+  function occurrences(e, rf, rt) {
+    const r = e.repeat;
+    if (!r) return e.from <= rt && e.to >= rf ? [{ from: e.from, to: e.to }] : [];
+    const dur = dayNum(e.to) - dayNum(e.from);
+    const until = r.until || '9999-12-31';
+    const out = [];
+    if (r.freq === 'week') {
+      const stepDays = 7 * (r.interval || 1), start = dayNum(e.from);
+      for (let k = Math.max(0, Math.floor((dayNum(rf) - dur - start) / stepDays)); ; k++) {
+        const f = fromDayNum(start + k * stepDays);
+        if (f > rt || f > until) break;
+        const t = shiftIso(f, dur);
+        if (t >= rf) out.push({ from: f, to: t });
+      }
+    } else {
+      const months = r.freq === 'month' ? 1 : 12;
+      const [y, m, d] = e.from.split('-').map(Number);
+      const [ry, rm] = rf.split('-').map(Number);
+      const k0 = Math.max(0, Math.floor(((ry - y) * 12 + (rm - m) - 1 - Math.ceil(dur / 28)) / months));
+      for (let k = k0; k < k0 + 2000; k++) {
+        const first = toIso(new Date(y, m - 1 + k * months, 1));
+        if (first > rt || first > until) break;
+        const date = new Date(y, m - 1 + k * months, d);
+        if (date.getDate() !== d) continue; // z. B. 31. in kurzen Monaten, 29.02.
+        const f = toIso(date);
+        if (f > rt || f > until) break;
+        const t = shiftIso(f, dur);
+        if (t >= rf) out.push({ from: f, to: t });
+      }
+    }
+    return out;
+  }
+  // Alle Vorkommen aller Einträge im Bereich: [{ e, from, to }]
+  function instances(rf, rt) {
+    const list = [];
+    state.entries.forEach(e => occurrences(e, rf, rt).forEach(o => list.push({ e, ...o })));
+    return list;
+  }
+  const categoryById = id => state.categories.find(c => c.id === id);
+  // Zählt der Eintrag als ganztägige Abwesenheit? (ohne Kategorie: ja)
+  const isAbsent = e => !e.half && (categoryById(e.category)?.absent ?? true);
+  const HALF = { am: 'Vormittag', pm: 'Nachmittag' };
 
   // ---------- Feiertage (Deutschland, nach Bundesland) ----------
   const REGIONS = {
@@ -551,6 +741,9 @@
     const cols = bands[0].days.length;
     const persons = visiblePersons();
     const n = persons.length;
+    const allDays = bands.flatMap(b => b.days).filter(Boolean);
+    const insts = instances(allDays[0], allDays[allDays.length - 1]);
+    const away = allAwayDays(insts, allDays[0], allDays[allDays.length - 1]);
 
     // Pro Band: Zeile mit Wochentag + Datum, darunter eine Zeile je sichtbarer Person.
     // Jahr/Quartal/Halbjahr zusätzlich mit Monatsname links.
@@ -590,7 +783,9 @@
             dt.append(`${pad(dd)}.`, mo);
             w.append(WEEKDAYS[wd], dt);
           }
-          w.title = `${WEEKDAYS[wd]}, ${fmt(date)}${hol ? ' – ' + hol : ''}${view === 'week' ? '' : '\n(Klick: Wochenansicht)'}`;
+          w.title = `${WEEKDAYS[wd]}, ${fmt(date)}${hol ? ' – ' + hol : ''}` +
+            `${away.has(date) ? '\n⚠ Alle Personen abwesend' : ''}${view === 'week' ? '' : '\n(Klick: Wochenansicht)'}`;
+          if (away.has(date)) w.classList.add('allaway');
           if (wd === 0 || wd === 6) w.classList.add('weekend');
           if (hol) w.classList.add('holiday');
           if (date === today) w.classList.add('today');
@@ -624,7 +819,7 @@
           }
           cal.appendChild(c);
         });
-        renderBars(band.days, p, r, single);
+        renderBars(band.days, p, r, single, insts);
       });
 
       // Feiertagsname quer über die Personenzeilen (Monat/Woche: steht schon im Kopf)
@@ -638,6 +833,74 @@
       row += n + 1;
     });
     fitDates();
+    renderInfo();
+  }
+
+  // Tage, an denen alle sichtbaren Personen (mind. 2) ganztägig abwesend sind
+  function allAwayDays(insts, rf, rt) {
+    const vis = visiblePersons().map(p => p.id);
+    const result = new Set();
+    if (vis.length < 2) return result;
+    const byDay = new Map();
+    insts.filter(i => isAbsent(i.e)).forEach(i => {
+      for (let d = i.from < rf ? rf : i.from, end = i.to > rt ? rt : i.to; d <= end; d = shiftIso(d, 1)) {
+        if (!byDay.has(d)) byDay.set(d, new Set());
+        i.e.persons.forEach(id => byDay.get(d).add(id));
+      }
+    });
+    byDay.forEach((set, d) => { if (vis.every(id => set.has(id))) result.add(d); });
+    return result;
+  }
+
+  // ---------- Info-Leiste: Heute / Demnächst / Kategorien ----------
+  function renderInfo() {
+    const today = todayIso();
+    const vis = new Set(visiblePersons().map(p => p.id));
+    const names = e => e.persons.filter(id => vis.has(id)).map(id => personById(id).name).join(', ');
+    const item = (color, html) => { const s = el('span', 'item'); s.append(el('i', null, { background: color })); s.insertAdjacentHTML('beforeend', html); return s; };
+    const esc = t => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const insts = instances(today, shiftIso(today, 14)).filter(i => i.e.persons.some(id => vis.has(id)))
+      .sort((a, b) => a.from.localeCompare(b.from));
+
+    const todayEl = document.getElementById('infoToday');
+    const nowList = insts.filter(i => i.from <= today && i.to >= today).map(i => {
+      const rest = i.to === today ? (i.e.half ? HALF[i.e.half] : 'nur heute') : `bis ${weekdayOf(i.to)} ${fmtShort(i.to)}`;
+      return item(i.e.color, `<b>${esc(names(i.e))}</b> ${esc(i.e.label)} <small>(${rest})</small>`);
+    });
+    const hol = holidayName(today);
+    if (hol) nowList.unshift(item('var(--holiday-text)', `<b>Feiertag</b> ${esc(hol)}`));
+    todayEl.replaceChildren(Object.assign(el('span', 'lbl'), { textContent: 'Heute' }),
+      ...(nowList.length ? nowList : [Object.assign(el('span', 'none'), { textContent: 'keine Einträge' })]));
+
+    const nextEl = document.getElementById('infoNext');
+    const next = [];
+    // Hinweis, wenn in den nächsten 60 Tagen alle abwesend sind
+    const horizon = shiftIso(today, 60);
+    const awayDays = [...allAwayDays(instances(today, horizon), today, horizon)].sort();
+    const ranges = [];
+    awayDays.forEach(d => { const r = ranges[ranges.length - 1]; if (r && shiftIso(r[1], 1) === d) r[1] = d; else ranges.push([d, d]); });
+    ranges.slice(0, 2).forEach(([a, b]) => next.push(Object.assign(el('span', 'item warn'),
+      { textContent: `⚠ Alle abwesend: ${fmtShort(a)}${a !== b ? '–' + fmtShort(b) : ''}` })));
+    const upcoming = insts.filter(i => i.from > today).map(i => ({ d: i.from,
+      node: item(i.e.color, `${weekdayOf(i.from)} ${fmtShort(i.from)} <b>${esc(names(i.e))}</b> ${esc(i.e.label)}${i.e.half ? ` <small>(${HALF[i.e.half]})</small>` : ''}`) }));
+    for (let d = shiftIso(today, 1); d <= shiftIso(today, 14); d = shiftIso(d, 1)) {
+      const h = holidayName(d);
+      if (h) upcoming.push({ d, node: item('var(--holiday-text)', `${weekdayOf(d)} ${fmtShort(d)} <b>Feiertag</b> ${esc(h)}`) });
+    }
+    upcoming.sort((a, b) => a.d.localeCompare(b.d)).slice(0, 8).forEach(u => next.push(u.node));
+    nextEl.replaceChildren(Object.assign(el('span', 'lbl'), { textContent: 'Demnächst' }),
+      ...(next.length ? next : [Object.assign(el('span', 'none'), { textContent: 'nichts in den nächsten 14 Tagen' })]));
+
+    // Was nicht ganz in die Zeile passt, weglassen statt mitten im Wort abzuschneiden
+    [todayEl, nextEl].forEach(line => {
+      while (line.children.length > 2 && line.scrollWidth > line.clientWidth + 1) line.lastElementChild.remove();
+    });
+
+    document.getElementById('catLegend').replaceChildren(...state.categories.map(c => {
+      const s = el('span'); s.append(el('i', null, { background: c.color }), c.name);
+      s.title = c.absent ? 'zählt als abwesend' : 'zählt nicht als abwesend';
+      return s;
+    }));
   }
 
   // Schriftgröße der Datumszeile an die Spaltenbreite anpassen (Jahr/Halbjahr/Quartal).
@@ -656,26 +919,28 @@
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(fitDates, 100); });
 
   // Balken einer Person in einem Band; überlappende Einträge werden in Spuren gestapelt.
-  function renderBars(days, person, row, showRange) {
+  function renderBars(days, person, row, showRange, insts) {
     const valid = days.filter(Boolean);
     const first = valid[0], last = valid[valid.length - 1];
-    const items = state.entries
-      .filter(e => e.persons.includes(person.id) && e.from <= last && e.to >= first)
+    const items = insts
+      .filter(i => i.e.persons.includes(person.id) && i.from <= last && i.to >= first)
       .sort((a, b) => a.from.localeCompare(b.from) || b.to.localeCompare(a.to));
     if (!items.length) return;
 
     const lanes = []; // je Spur: letzte belegte Spalte
-    const placed = items.map(e => {
-      const s = days.findIndex(d => d && d >= e.from);
+    const placed = items.map(inst => {
+      const s = days.findIndex(d => d && d >= inst.from);
       let t = s;
-      days.forEach((d, i) => { if (d && d <= e.to) t = i; });
+      days.forEach((d, i) => { if (d && d <= inst.to) t = i; });
       let lane = lanes.findIndex(endCol => endCol < s);
       if (lane === -1) { lane = lanes.length; lanes.push(t); } else lanes[lane] = t;
-      return { e, s, t, lane, contL: e.from < first, contR: e.to > last };
+      return { inst, s, t, lane, contL: inst.from < first, contR: inst.to > last };
     });
     const n = lanes.length;
 
-    placed.forEach(({ e, s, t, lane, contL, contR }) => {
+    placed.forEach(({ inst, s, t, lane, contL, contR }) => {
+      const e = inst.e;
+      const half = e.half && inst.from === inst.to ? e.half : null;
       const b = el('div', 'bar', {
         gridColumn: `${s + 3} / ${t + 4}`,
         gridRow: row,
@@ -686,17 +951,23 @@
         // Spur-Versatz relativ zur eigenen Balkenhöhe
         transform: `translateY(calc(${lane * 100}% + ${lane * 2}px))`,
       });
+      if (half) Object.assign(b.style, { width: 'calc(50% - 1px)', justifySelf: half === 'am' ? 'start' : 'end' });
       if (contL) b.classList.add('cont-left');
       if (contR) b.classList.add('cont-right');
-      b.textContent = e.label;
+      if (e.repeat) b.classList.add('repeat');
+      b.textContent = (half ? '½ ' : '') + e.label;
       if (showRange) {
         const r = el('span', 'range');
-        r.textContent = e.from === e.to ? fmt(e.from) : `${fmt(e.from)} – ${fmt(e.to)}`;
+        r.textContent = (inst.from === inst.to ? fmt(inst.from) : `${fmt(inst.from)} – ${fmt(inst.to)}`) + (half ? ` · ${HALF[half]}` : '');
         b.appendChild(r);
       }
       const names = e.persons.map(id => personById(id)?.name).filter(Boolean).join(', ');
-      b.title = `${e.label}\n${fmt(e.from)} – ${fmt(e.to)}\n${names}`;
-      b.addEventListener('click', ev => { ev.stopPropagation(); openEntry(e); });
+      const cat = categoryById(e.category);
+      b.title = [e.label + (cat && cat.name !== e.label ? ` (${cat.name})` : ''),
+                 `${fmt(inst.from)} – ${fmt(inst.to)}${half ? ' · ' + HALF[half] : ''}`, names,
+                 e.repeat ? `↻ ${REPEATS[repeatKey(e.repeat)]}${e.repeat.until ? ' bis ' + fmt(e.repeat.until) : ''}` : '',
+                 'Ziehen: verschieben · Rand ziehen: Dauer ändern · Klick: bearbeiten'].filter(Boolean).join('\n');
+      b._inst = { ...inst, contL, contR };
       cal.appendChild(b);
     });
   }
@@ -743,10 +1014,41 @@
   const newId = prefix => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
   // ---------- Eintrag-Dialog ----------
-  // ---------- Zeitraum mit der Maus ziehen ----------
-  // Maustaste auf einem Tag drücken, bis zum letzten Tag ziehen, loslassen → Dialog mit Von/Bis.
-  // Ein einfacher Klick ergibt einen eintägigen Eintrag.
+  // ---------- Rückgängig ----------
+  const undoStack = [];
+  const toast = document.getElementById('toast');
+  let toastTimer;
+  function showToast(msg, withUndo) {
+    toast.querySelector('span').textContent = msg;
+    toast.querySelector('button').hidden = !withUndo;
+    toast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.hidden = true; }, 8000);
+  }
+  // Änderung abschließen: vorherigen Stand merken, speichern, neu zeichnen, Hinweis zeigen
+  function commit(before, msg) {
+    undoStack.push(before);
+    if (undoStack.length > 50) undoStack.shift();
+    save();
+    render();
+    showToast(msg, true);
+  }
+  function undo() {
+    if (!undoStack.length) { showToast('Nichts zum Rückgängigmachen'); return; }
+    state = normalize(JSON.parse(undoStack.pop()));
+    holidayCache.clear();
+    save();
+    render();
+    showToast('Rückgängig gemacht');
+  }
+  toast.querySelector('button').addEventListener('click', undo);
+
+  // ---------- Maus: Zeitraum aufziehen, Balken verschieben / Dauer ändern ----------
+  // Auf freien Tagen: drücken, ziehen, loslassen → Dialog mit Von/Bis (Klick = ein Tag).
+  // Auf einem Balken: ziehen verschiebt ihn, am linken/rechten Rand ziehen ändert Beginn/Ende,
+  // Klick ohne Bewegung öffnet ihn zum Bearbeiten. Bei Serien wirkt das auf die ganze Serie.
   let drag = null;
+  let barDrag = null;
   const dayAt = (x, y) => document.elementFromPoint(x, y)?.closest('#calendar .day[data-date]');
 
   function paintDrag() {
@@ -760,19 +1062,59 @@
   }
 
   cal.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    const bar = e.target.closest('.bar');
+    if (bar) {
+      e.preventDefault();
+      const { e: entry, contL, contR } = bar._inst;
+      const r = bar.getBoundingClientRect();
+      const edge = Math.min(8, r.width / 4);
+      const mode = !contL && e.clientX - r.left < edge ? 'start' : !contR && r.right - e.clientX < edge ? 'end' : 'move';
+      cal.classList.add('dragging'); // Balken lassen Zeiger durch, damit der Tag darunter gefunden wird
+      const startDate = dayAt(e.clientX, e.clientY)?.dataset.date || bar._inst.from;
+      barDrag = { entry, mode, startDate, orig: { from: entry.from, to: entry.to, half: entry.half },
+                  before: JSON.stringify(state), moved: false };
+      return;
+    }
     const c = e.target.closest('.day[data-date]');
-    if (!c || e.button !== 0) return;
+    if (!c) return;
     e.preventDefault();
     drag = { person: c.dataset.person, start: c.dataset.date, end: c.dataset.date };
     cal.classList.add('dragging');
     paintDrag();
   });
   document.addEventListener('pointermove', e => {
+    if (barDrag) {
+      const date = dayAt(e.clientX, e.clientY)?.dataset.date;
+      if (!date) return;
+      const delta = dayNum(date) - dayNum(barDrag.startDate);
+      const { orig, entry, mode } = barDrag;
+      let from = orig.from, to = orig.to;
+      if (mode === 'move') { from = shiftIso(orig.from, delta); to = shiftIso(orig.to, delta); }
+      else if (mode === 'start') from = [shiftIso(orig.from, delta), orig.to].sort()[0];
+      else to = [shiftIso(orig.to, delta), orig.from].sort()[1];
+      if (from === entry.from && to === entry.to) return;
+      entry.from = from;
+      entry.to = to;
+      if (from !== to) delete entry.half; else if (orig.half) entry.half = orig.half;
+      barDrag.moved = from !== orig.from || to !== orig.to;
+      render();
+      cal.classList.add('dragging', 'moving');
+      return;
+    }
     if (!drag) return;
     const c = dayAt(e.clientX, e.clientY);
     if (c && c.dataset.date !== drag.end) { drag.end = c.dataset.date; paintDrag(); }
   });
   document.addEventListener('pointerup', () => {
+    if (barDrag) {
+      const { entry, moved, mode, before } = barDrag;
+      barDrag = null;
+      cal.classList.remove('dragging', 'moving');
+      if (moved) commit(before, `„${entry.label}“ ${mode === 'move' ? 'verschoben' : 'geändert'}: ${fmt(entry.from)} – ${fmt(entry.to)}`);
+      else openEntry(entry);
+      return;
+    }
     if (!drag) return;
     const [from, to] = [drag.start, drag.end].sort();
     const person = drag.person;
@@ -780,7 +1122,11 @@
     cal.classList.remove('dragging');
     openEntry(null, { from, to, persons: [person] });
   });
-  document.addEventListener('pointercancel', () => { drag = null; clearDrag(); });
+  document.addEventListener('pointercancel', () => {
+    if (barDrag) { state = normalize(JSON.parse(barDrag.before)); barDrag = null; render(); }
+    drag = null;
+    clearDrag();
+  });
 
   const dlg = document.getElementById('entryDialog');
   dlg.addEventListener('close', clearDrag);
@@ -813,15 +1159,60 @@
     fSwatches.appendChild(custom);
   }
 
+  // Kategorie, halber Tag, Wiederholung
+  const fCats = document.getElementById('fCats');
+  const fHalf = document.getElementById('fHalf');
+  const fRepeat = document.getElementById('fRepeat');
+  const fUntil = document.getElementById('fUntil');
+  fRepeat.replaceChildren(...Object.entries(REPEATS).map(([k, v]) => Object.assign(el('option'), { value: k, textContent: v })));
+  let selCategory = null;
+  let selHalf = '';
+
+  function renderCats() {
+    fCats.replaceChildren(...state.categories.map(c => {
+      const b = el('button', c.id === selCategory ? 'active' : '');
+      b.type = 'button';
+      b.append(el('i', null, { background: c.color }), c.name);
+      b.addEventListener('click', () => {
+        if (selCategory === c.id) { selCategory = null; renderCats(); return; }
+        // Bezeichnung übernehmen, wenn leer oder noch der Name einer anderen Kategorie
+        const prev = categoryById(selCategory);
+        if (!fLabel.value.trim() || fLabel.value.trim() === prev?.name ||
+            state.categories.some(x => x.name === fLabel.value.trim())) fLabel.value = c.name;
+        selCategory = c.id;
+        selColor = c.color;
+        renderCats();
+        renderSwatches();
+      });
+      return b;
+    }));
+  }
+  function updateHalf() {
+    const single = fFrom.value && fFrom.value === fTo.value;
+    if (!single) selHalf = '';
+    fHalf.querySelectorAll('button').forEach(b => {
+      b.disabled = !single && b.dataset.half !== '';
+      b.classList.toggle('active', b.dataset.half === selHalf);
+    });
+  }
+  fHalf.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { selHalf = b.dataset.half; updateHalf(); }));
+  function updateRepeat() { document.getElementById('fUntilBox').style.visibility = fRepeat.value ? 'visible' : 'hidden'; }
+  fRepeat.addEventListener('change', updateRepeat);
+
   function openEntry(entry, preset = {}) {
     editing = entry;
     const src = entry || preset;
     document.getElementById('entryTitle').textContent = entry ? 'Eintrag bearbeiten' : 'Neuer Eintrag';
     document.getElementById('deleteBtn').style.display = entry ? '' : 'none';
+    document.getElementById('fSeriesHint').hidden = !entry?.repeat;
     fLabel.value = src.label || '';
     fFrom.value = src.from || todayIso();
     fTo.value = src.to || src.from || todayIso();
     selColor = src.color || personById((src.persons || [])[0])?.color || PALETTE[0];
+    selCategory = src.category && categoryById(src.category) ? src.category : null;
+    selHalf = src.half || '';
+    fRepeat.value = repeatKey(src.repeat);
+    fUntil.value = src.repeat?.until || '';
     fPersons.replaceChildren(...state.persons.map(p => {
       const l = el('label');
       const cb = el('input');
@@ -832,7 +1223,10 @@
       return l;
     }));
     fError.textContent = '';
+    renderCats();
     renderSwatches();
+    updateHalf();
+    updateRepeat();
     prevFrom = fFrom.value;
     markQuick();
     dlg.showModal();
@@ -850,18 +1244,19 @@
     if (!fFrom.value) fFrom.value = todayIso();
     fTo.value = plusWeeks(fFrom.value, +b.dataset.weeks);
     markQuick();
+    updateHalf();
   }));
   let prevFrom = '';
   fFrom.addEventListener('focus', () => { prevFrom = fFrom.value; });
   fFrom.addEventListener('change', () => {
-    // war eine Wochen-Dauer gewählt, wandert "Bis" mit
-    const weeks = prevFrom && [1, 2, 3, 4].find(n => fTo.value === plusWeeks(prevFrom, n));
-    if (weeks && fFrom.value) fTo.value = plusWeeks(fFrom.value, weeks);
-    else if (!fTo.value || fTo.value < fFrom.value) fTo.value = fFrom.value;
+    // "Bis" wandert mit, die Dauer bleibt gleich
+    if (fFrom.value && prevFrom && fTo.value >= prevFrom) fTo.value = shiftIso(fFrom.value, dayNum(fTo.value) - dayNum(prevFrom));
+    else if (fFrom.value && (!fTo.value || fTo.value < fFrom.value)) fTo.value = fFrom.value;
     prevFrom = fFrom.value;
     markQuick();
+    updateHalf();
   });
-  fTo.addEventListener('change', markQuick);
+  fTo.addEventListener('change', () => { markQuick(); updateHalf(); });
 
   document.getElementById('entryForm').addEventListener('submit', ev => {
     const persons = [...fPersons.querySelectorAll('input:checked')].map(c => c.value);
@@ -871,22 +1266,27 @@
     else if (!fFrom.value || !fTo.value) err = 'Bitte Von- und Bis-Datum angeben.';
     else if (fTo.value < fFrom.value) err = '„Bis“ darf nicht vor „Von“ liegen.';
     else if (!persons.length) err = 'Bitte mindestens eine Person auswählen.';
+    else if (fRepeat.value && fUntil.value && fUntil.value < fFrom.value) err = '„Endet am“ darf nicht vor „Von“ liegen.';
     if (err) { ev.preventDefault(); fError.textContent = err; return; }
 
-    const data = { label, from: fFrom.value, to: fTo.value, persons, color: selColor };
-    if (editing) Object.assign(editing, data);
-    else state.entries.push({ id: 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ...data });
-    save();
-    render();
+    const before = JSON.stringify(state);
+    const data = { label, from: fFrom.value, to: fTo.value, persons, color: selColor,
+                   category: selCategory, half: fFrom.value === fTo.value && selHalf ? selHalf : null,
+                   repeat: repeatFromKey(fRepeat.value) };
+    if (data.repeat && fUntil.value) data.repeat.until = fUntil.value;
+    const target = editing || { id: newId('e') };
+    Object.assign(target, data);
+    ['category', 'half', 'repeat'].forEach(k => { if (!target[k]) delete target[k]; });
+    if (!editing) state.entries.push(target);
+    commit(before, `„${label}“ ${editing ? 'gespeichert' : 'eingetragen'}`);
   });
   document.getElementById('cancelBtn').addEventListener('click', () => dlg.close());
   document.getElementById('deleteBtn').addEventListener('click', () => {
-    if (editing && confirm(`„${editing.label}“ wirklich löschen?`)) {
-      state.entries = state.entries.filter(e => e !== editing);
-      save();
-      render();
-      dlg.close();
-    }
+    if (!editing) return;
+    const before = JSON.stringify(state);
+    state.entries = state.entries.filter(e => e !== editing);
+    dlg.close();
+    commit(before, `„${editing.label}“ ${editing.repeat ? '(ganze Serie) ' : ''}gelöscht`);
   });
 
   // ---------- Einstellungen ----------
@@ -918,6 +1318,41 @@
     }));
   }
 
+  // Kategorien ebenfalls als Arbeitskopie
+  const sCats = document.getElementById('sCats');
+  let catDraft = [];
+  function renderCatDraft() {
+    sCats.replaceChildren(...catDraft.map(c => {
+      const row = el('div', 'settings-person');
+      const col = el('input'); col.type = 'color'; col.value = c.color;
+      col.addEventListener('input', () => { c.color = col.value; });
+      const n = el('input'); n.type = 'text'; n.value = c.name; n.maxLength = 30;
+      n.addEventListener('input', () => { c.name = n.value; });
+      const ab = el('label'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = !!c.absent;
+      cb.addEventListener('change', () => { c.absent = cb.checked; });
+      ab.title = 'Zählt als Abwesenheit (für den Hinweis „Alle abwesend“)'; ab.append(cb, 'abwesend');
+      const del = el('button', 'danger'); del.type = 'button'; del.textContent = '✕'; del.title = 'Kategorie entfernen (Einträge bleiben erhalten)';
+      del.addEventListener('click', () => { catDraft = catDraft.filter(x => x !== c); renderCatDraft(); });
+      row.append(col, n, ab, del);
+      return row;
+    }));
+  }
+  document.getElementById('sAddCat').addEventListener('click', () => {
+    const used = new Set(catDraft.map(c => c.color));
+    catDraft.push({ id: newId('c'), name: 'Neue Kategorie', color: PALETTE.find(c => !used.has(c)) || PALETTE[0], absent: true });
+    renderCatDraft();
+    sCats.querySelector('.settings-person:last-child input[type=text]').select();
+  });
+
+  // Rückkehr zur Standardansicht bei Inaktivität (Einstellung gilt nur für diesen Browser)
+  const IDLE_KEY = 'jahreskalender.idle';
+  const sIdleView = document.getElementById('sIdleView');
+  const sIdleMin = document.getElementById('sIdleMin');
+  sIdleView.replaceChildren(Object.assign(el('option'), { value: 'off', textContent: 'Aus' }),
+    ...Object.entries(VIEWS).map(([k, v]) => Object.assign(el('option'), { value: k, textContent: v + 'sansicht' })));
+  let idle = { view: 'year', minutes: 5 };
+  try { const v = JSON.parse(localStorage.getItem(IDLE_KEY)); if (v && (VIEWS[v.view] || v.view === 'off')) idle = v; } catch (e) { /* egal */ }
+
   document.getElementById('sAddPerson').addEventListener('click', () => {
     const used = new Set(draft.map(p => p.color));
     draft.push({ id: newId('p'), name: `Person ${draft.length + 1}`, color: PALETTE.find(c => !used.has(c)) || PALETTE[0] });
@@ -928,10 +1363,15 @@
   document.getElementById('settingsBtn').addEventListener('click', () => {
     draft = structuredClone(state.persons);
     renderDraft();
+    catDraft = structuredClone(state.categories);
+    renderCatDraft();
+    sIdleView.value = idle.view;
+    sIdleMin.value = idle.minutes;
     sRegion.value = state.holidayRegion || 'DE';
     sDlg.showModal();
   });
   document.getElementById('settingsForm').addEventListener('submit', ev => {
+    const before = JSON.stringify(state);
     const ids = new Set(draft.map(p => p.id));
     const removed = state.persons.filter(p => !ids.has(p.id));
     if (removed.length) {
@@ -948,10 +1388,22 @@
     draft.forEach((p, i) => { p.name = p.name.trim() || `Person ${i + 1}`; });
     if (draft.every(p => p.hidden)) draft[0].hidden = false; // mindestens eine Person bleibt sichtbar
     state.persons = draft;
+    // Kategorien: geänderte Farbe auf deren Einträge übertragen, gelöschte Kategorien lösen
+    const oldCats = new Map(state.categories.map(c => [c.id, c]));
+    catDraft.forEach((c, i) => { c.name = c.name.trim() || `Kategorie ${i + 1}`; });
+    const catIds = new Set(catDraft.map(c => c.id));
+    state.entries.forEach(e => {
+      if (!e.category) return;
+      if (!catIds.has(e.category)) { delete e.category; return; }
+      const old = oldCats.get(e.category), now = catDraft.find(c => c.id === e.category);
+      if (old && old.color !== now.color && e.color === old.color) e.color = now.color;
+    });
+    state.categories = catDraft;
     state.holidayRegion = sRegion.value;
     holidayCache.clear();
-    save();
-    render();
+    idle = { view: sIdleView.value, minutes: Math.max(1, Math.min(120, +sIdleMin.value || 5)) };
+    try { localStorage.setItem(IDLE_KEY, JSON.stringify(idle)); } catch (e) { /* egal */ }
+    commit(before, 'Einstellungen gespeichert');
   });
   document.getElementById('sCancelBtn').addEventListener('click', () => sDlg.close());
 
@@ -972,11 +1424,11 @@
       const s = JSON.parse(await file.text());
       if (!Array.isArray(s.persons) || !s.persons.length || !Array.isArray(s.entries)) throw new Error();
       if (!confirm('Aktuelle Daten durch die importierte Datei ersetzen?')) return;
-      state = s;
+      const before = JSON.stringify(state);
+      state = normalize(s);
       holidayCache.clear();
-      save();
-      render();
       sDlg.close();
+      commit(before, 'Daten importiert');
     } catch (e) {
       alert('Die Datei ist kein gültiger Kalender-Export.');
     } finally {
@@ -992,6 +1444,7 @@
   const KEYS = { w: 'week', m: 'month', q: 'quarter', h: 'half', j: 'year' };
   document.addEventListener('keydown', e => {
     if (document.querySelector('dialog[open]')) return; // Eingabefelder gibt es nur in Dialogen
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
     if (e.key === 'ArrowLeft') step(-1);
     else if (e.key === 'ArrowRight') step(1);
     else if (!e.ctrlKey && !e.metaKey && !e.altKey && KEYS[e.key]) setView(KEYS[e.key]);
@@ -1020,6 +1473,38 @@
   document.getElementById('fullscreenBtn').addEventListener('click', () => {
     if (document.fullscreenElement) document.exitFullscreen();
     else document.documentElement.requestFullscreen?.();
+  });
+
+  // Inaktivität: nach X Minuten ohne Bedienung zurück zur Standardansicht mit „Heute“
+  let lastActivity = Date.now();
+  ['pointerdown', 'pointermove', 'keydown', 'wheel'].forEach(t =>
+    document.addEventListener(t, () => { lastActivity = Date.now(); }, { passive: true }));
+  setInterval(() => {
+    if (idle.view === 'off' || Date.now() - lastActivity < idle.minutes * 60e3) return;
+    if (document.querySelector('dialog[open]') || drag || barDrag) return;
+    const today = startOfDay(new Date());
+    if (view === idle.view && toIso(cursor) === toIso(today)) return;
+    cursor = today;
+    view = idle.view; // ohne Speichern: die gemerkte Ansicht des Nutzers bleibt
+    render();
+  }, 15e3);
+
+  // Drucken: immer im hellen Design
+  document.getElementById('printBtn').addEventListener('click', () => window.print());
+  let themeBeforePrint, printing = false;
+  window.addEventListener('beforeprint', () => {
+    if (printing) return; // manche Browser melden den Druckbeginn doppelt
+    printing = true;
+    themeBeforePrint = document.documentElement.dataset.theme;
+    document.documentElement.dataset.theme = 'light';
+    toast.hidden = true;
+  });
+  window.addEventListener('afterprint', () => {
+    if (!printing) return;
+    printing = false;
+    if (themeBeforePrint) document.documentElement.dataset.theme = themeBeforePrint;
+    else delete document.documentElement.dataset.theme;
+    fitDates();
   });
 
   // Tageswechsel (Monitor läuft dauerhaft): Heute-Markierung aktualisieren

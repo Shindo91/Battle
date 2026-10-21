@@ -91,16 +91,27 @@ Keine Installation, kein Server.
 - **Ansichten** oben links umschalten: **Woche**, **Monat**, **Quartal**, **Halbjahr**, **Jahr** (auch per
   Taste `W`/`M`/`Q`/`H`/`J`, blättern mit ◀ ▶ oder den Pfeiltasten). Klick auf einen Monatsnamen öffnet die
   Monatsansicht, Klick auf einen Wochentag die Wochenansicht. Die gewählte Ansicht bleibt gespeichert.
-- **Einträge** mit Bezeichnung, Zeitraum *von – bis*, Farbe (Palette oder eigene Farbe) und
-  einer oder mehreren Personen. Schnellauswahl *1–4 Wochen* setzt das Bis-Datum automatisch.
-  Anlegen über „+ Eintrag“, Klick auf einen Tag oder **mit der Maus über mehrere Tage ziehen**
-  (Von/Bis und Person werden übernommen);
-  Klick auf einen Balken zum Bearbeiten/Löschen. Überlappende Einträge werden gestapelt.
+- **Einträge** mit Bezeichnung, Zeitraum *von – bis*, Farbe und einer oder mehreren Personen.
+  - **Kategorien** (Urlaub, Krank, Schulung, Homeoffice, Termin – in den Einstellungen anpassbar) setzen
+    Bezeichnung und Farbe per Klick; Legende unten rechts.
+  - **Halbe Tage** (Vormittag/Nachmittag) bei eintägigen Einträgen.
+  - **Wiederholen**: wöchentlich, alle 2 Wochen, monatlich, jährlich – optional mit Enddatum.
+    Änderungen wirken auf die ganze Serie.
+  - Schnellauswahl *1–4 Wochen* setzt das Bis-Datum; beim Ändern von „Von“ bleibt die Dauer erhalten.
+  - Anlegen über „+ Eintrag“, Klick auf einen Tag oder **mit der Maus über mehrere Tage ziehen**.
+  - **Balken verschieben** per Ziehen, **Dauer ändern** am linken/rechten Rand, Klick öffnet zum Bearbeiten.
+  - **Rückgängig**: Hinweis mit Button nach jeder Änderung, oder `Strg+Z`.
+- **Info-Leiste** unten: wer heute eingetragen ist, was in den nächsten 14 Tagen ansteht (inkl. Feiertage).
+- **Alle abwesend**: Tage, an denen alle sichtbaren Personen ganztägig abwesend sind, werden gelb markiert
+  und unten angekündigt. Welche Kategorien als abwesend zählen, ist einstellbar (ohne Kategorie = abwesend).
+- **Inaktivität**: nach einstellbarer Zeit ohne Bedienung springt der Monitor zurück zu „Heute“ in der
+  gewählten Ansicht (Standard: Jahr nach 5 Minuten).
+- **Drucken** (Drucker-Symbol): aktuelle Ansicht auf A4 quer, immer im hellen Design, auch als PDF.
 - **Feiertage** (Deutschland) werden rosa markiert und mit Namen beschriftet (in Jahr/Halbjahr/Quartal in der Tagesspalte, in Monats- und
   Wochenansicht unter dem Datum). Bundesland in den Einstellungen wählbar; wird für jedes Jahr automatisch berechnet.
 - **Personen**: beliebig viele (Standard 3). In den Einstellungen hinzufügen, umbenennen, Farbe ändern,
   entfernen oder per Häkchen ausblenden. Schnell aus-/einblenden durch Klick auf den Namen oben in der Kopfzeile.
 - **Hell/Dunkel**: Button in der Kopfzeile schaltet zwischen *Auto* (wie System), *Hell* und *Dunkel*.
-- **Einstellungen**: Personen, Bundesland für Feiertage, Export/Import der Daten als JSON.
+- **Einstellungen**: Personen, Kategorien, Inaktivität, Bundesland für Feiertage, Export/Import als JSON.
 - Daten werden im Browser (`localStorage`) gespeichert – per Export/Import auf einen anderen
   Rechner übertragbar.
