@@ -24,6 +24,8 @@
   AD-Gruppe, deren Mitglieder sich anmelden dürfen (Standard L_Kalender_Nutzer).
 .PARAMETER AdAdminGruppe
   AD-Gruppe, deren Mitglieder Administratoren sind (Standard L_Kalender_Admins).
+.PARAMETER AdServer
+  Bestimmter Domänencontroller (Name oder IP). Leer = automatisch über das DNS der Domäne.
 .PARAMETER OhneAD
   Keine AD-Anmeldung, nur lokale Konten.
 .PARAMETER AdNachpruefungMinuten
@@ -40,6 +42,7 @@ param(
   [string]$DataDir = (Join-Path $PSScriptRoot 'daten'),
   [string]$AdNutzerGruppe = 'L_Kalender_Nutzer',
   [string]$AdAdminGruppe = 'L_Kalender_Admins',
+  [string]$AdServer = '',
   [switch]$OhneAD,
   [switch]$ResetAdmin,
   [int]$AdNachpruefungMinuten = 15,
@@ -158,14 +161,33 @@ function Get-CleanText($s, [int]$max) {
 # ---------------------------------------------------------------- Active Directory
 # Ergebnis der Funktionen: @{ ok; sam; sid; display; user (darf rein); admin (Admin-Gruppe); error }
 
+# Vollständiger Fehlertext für das Protokoll: Fehlerart + Meldung + innere Ursachen
+function Get-ErrorText($err) {
+  $e = $(if ($err -is [System.Management.Automation.ErrorRecord]) { $err.Exception } else { $err })
+  $parts = @()
+  while ($e) {
+    $msg = ([string]$e.Message).Trim()
+    if ($e -is [System.Runtime.InteropServices.COMException] -or $e.PSObject.Properties['HResult']) { $msg += " (0x{0:X8})" -f $e.HResult }
+    $parts += "[$($e.GetType().FullName)] $msg"
+    $e = $e.InnerException
+  }
+  return ($parts -join ' --> ')
+}
+
 $script:AdMock = $null
 if ($UseAD -and $AdTestDatei) { $script:AdMock = Get-Content $AdTestDatei -Raw -Encoding UTF8 | ConvertFrom-Json }
 if ($UseAD -and -not $AdTestDatei) {
   try { Add-Type -AssemblyName System.DirectoryServices.AccountManagement }
-  catch { Write-Host "AD-Unterstützung nicht verfügbar: $($_.Exception.Message)" }
+  catch { Write-Log "AD-Unterstützung nicht verfügbar: $(Get-ErrorText $_)" }
 }
 
 # "DOMÄNE\name" → "name"
+# Verbindung zum AD: automatisch über DNS oder zum angegebenen Domänencontroller
+function New-AdContext {
+  if ($AdServer) { return New-Object System.DirectoryServices.AccountManagement.PrincipalContext([System.DirectoryServices.AccountManagement.ContextType]::Domain, $AdServer) }
+  return New-Object System.DirectoryServices.AccountManagement.PrincipalContext([System.DirectoryServices.AccountManagement.ContextType]::Domain)
+}
+
 function Get-AdLoginName([string]$name) { if ($name -match '\\') { return ($name -split '\\')[-1] } return $name }
 
 function Get-AdRolesFromNames($names) {
@@ -213,7 +235,7 @@ function Test-AdLogin([string]$name, [string]$pw) {
     $r = Get-AdRolesFromNames $a.groups
     return @{ ok = $true; sam = $a.sam; sid = $a.sid; display = $a.display; user = $r.user; admin = $r.admin; enabled = ($a.enabled -ne $false) }
   }
-  $ctx = New-Object System.DirectoryServices.AccountManagement.PrincipalContext([System.DirectoryServices.AccountManagement.ContextType]::Domain)
+  $ctx = New-AdContext
   try {
     if (-not $ctx.ValidateCredentials($name, $pw, [System.DirectoryServices.AccountManagement.ContextOptions]::Negotiate)) { return @{ ok = $false } }
     $up = [System.DirectoryServices.AccountManagement.UserPrincipal]::FindByIdentity($ctx, $name)
@@ -231,7 +253,7 @@ function Find-AdAccount([string]$by, [string]$value) {
     $r = Get-AdRolesFromNames $a.groups
     return @{ ok = $true; sam = $a.sam; sid = $a.sid; display = $a.display; user = $r.user; admin = $r.admin; enabled = ($a.enabled -ne $false) }
   }
-  $ctx = New-Object System.DirectoryServices.AccountManagement.PrincipalContext([System.DirectoryServices.AccountManagement.ContextType]::Domain)
+  $ctx = New-AdContext
   try {
     # per SID gezielt; per Name sucht FindByIdentity in Anmeldename, UPN usw.
     $up = $(if ($by -eq 'sid') { [System.DirectoryServices.AccountManagement.UserPrincipal]::FindByIdentity($ctx, [System.DirectoryServices.AccountManagement.IdentityType]::Sid, $value) }
@@ -557,7 +579,7 @@ function Get-SessionUser($req, [ref]$tokenOut) {
         $script:Sessions.Remove($c.Value); return $null
       }
       Update-AdRole $u $a
-    } catch { Write-Log "AD-Nachprüfung für $($u.name) nicht möglich: $($_.Exception.Message)" }   # bei AD-Störung Sitzung behalten
+    } catch { Write-Log "AD-Nachprüfung für $($u.name) nicht möglich: $(Get-ErrorText $_)" }   # bei AD-Störung Sitzung behalten
   }
   if (-not $s.display) { $s.expires = (Get-Date).AddHours($UserSessionHours) }   # gleitend verlängern
   if ($tokenOut) { $tokenOut.Value = $c.Value }
@@ -742,7 +764,7 @@ function Invoke-Request($ctx) {
     } else {
       try { $a = Test-AdLogin $name $pw }
       catch {
-        Write-Log "AD nicht erreichbar bei Anmeldung von ${name}: $($_.Exception.Message)"
+        Write-Log "AD-Fehler bei Anmeldung von ${name}: $(Get-ErrorText $_)"
         throw (New-HttpError 503 'Die Windows-Anmeldung (Active Directory) ist gerade nicht erreichbar. Bitte später erneut versuchen.')
       }
       if (-not $a.ok) { & $fail 'AD: Name/Passwort falsch' 401 'Benutzername oder Passwort falsch.' }
@@ -976,7 +998,8 @@ function Invoke-Request($ctx) {
     $adAccount = $null
     if ($UseAD -and (Get-Prop $body 'role') -ne 'display') {
       # AD-Konto vorab eintragen, damit Rechte schon vor der ersten Anmeldung vergeben werden können
-      try { $adAccount = Find-AdAccount 'name' $name } catch { throw (New-HttpError 503 'Active Directory nicht erreichbar.') }
+      try { $adAccount = Find-AdAccount 'name' $name }
+      catch { Write-Log "AD-Fehler beim Eintragen von ${name}: $(Get-ErrorText $_)"; throw (New-HttpError 503 'Active Directory nicht erreichbar (Details in server.log).') }
       if (-not $adAccount.ok) { throw (New-HttpError 400 "Im Active Directory gibt es kein Konto '$name'.") }
       if ($script:Users | Where-Object { $_.source -eq 'ad' -and $_.sid -eq $adAccount.sid }) { throw (New-HttpError 400 'Dieses AD-Konto ist bereits eingetragen.') }
       $name = $adAccount.sam
@@ -1089,6 +1112,7 @@ try {
   exit 1
 }
 Write-Log "Kalender-Server läuft: http://$([Environment]::MachineName):$Port/  (Daten: $DataDir)"
+Write-Log $(if ($UseAD) { "Anmeldung über AD: Gruppe $AdNutzerGruppe, Admins $AdAdminGruppe, Domänencontroller $(if ($AdServer) { $AdServer } else { 'automatisch' })$(if ($AdTestDatei) { ' (TEST-AD)' })" } else { 'Anmeldung: nur lokale Konten' })
 
 try {
   while ($listener.IsListening) {

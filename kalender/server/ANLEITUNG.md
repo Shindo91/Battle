@@ -23,6 +23,7 @@ C:\Kalender\index.html
 C:\Kalender\kalender-server.ps1
 C:\Kalender\installieren.ps1
 C:\Kalender\aktualisieren.ps1
+C:\Kalender\ad-test.ps1          (nur zur Fehlersuche bei der Windows-Anmeldung)
 ```
 
 (Alternativ dürfen die beiden Skripte auch in einem Unterordner `server` liegen. Die Daten landen
@@ -110,7 +111,20 @@ Standardmäßig melden sich alle mit ihrem **Windows-Benutzernamen und -Passwort
 Zertifikat einrichten (siehe Abschnitt Sicherheit).
 
 Voraussetzung: Der Server ist Mitglied der Domäne (der Dienst läuft als SYSTEM = Computerkonto und fragt den
-Domänencontroller ab). Fehlermeldungen stehen in `daten\server.log`.
+Domänencontroller ab). Der Domänencontroller wird automatisch über das DNS gefunden und darf ein anderer Server
+sein; er muss vom Kalender-Server aus erreichbar sein (u. a. LDAP 389, Kerberos 88). Fehlermeldungen stehen in
+`daten\server.log`.
+
+**Fehlersuche „Windows-Anmeldung nicht erreichbar“** – auf dem Kalender-Server als Administrator:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File C:\Kalender\ad-test.ps1 -Benutzer mmuster -AlsSystem
+```
+
+Prüft Schritt für Schritt (als SYSTEM, wie der Dienst): Domäne, Domänencontroller, Ports, AD-Verbindung, Gruppen,
+Benutzer und Mitgliedschaft. Mit `-MitPasswort` (ohne `-AlsSystem`) auch die Anmeldung selbst.
+Findet der Server den Domänencontroller nicht automatisch, ihn fest angeben:
+`installieren.ps1 -AdServer dc01.firma.local` (zum Testen: `ad-test.ps1 -AdServer dc01.firma.local`).
 
 ## 3. Kalender einrichten (im Browser als admin)
 

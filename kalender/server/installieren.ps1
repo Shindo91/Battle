@@ -17,6 +17,8 @@
   AD-Gruppe, deren Mitglieder sich anmelden dürfen (Standard L_Kalender_Nutzer).
 .PARAMETER AdAdminGruppe
   AD-Gruppe der Administratoren (Standard L_Kalender_Admins).
+.PARAMETER AdServer
+  Bestimmter Domänencontroller (Name oder IP), falls die automatische Suche nicht klappt.
 .PARAMETER OhneAD
   Keine Windows-/AD-Anmeldung, nur lokale Konten.
 .PARAMETER Entfernen
@@ -28,6 +30,7 @@ param(
   [int]$Port = 8080,
   [string]$AdNutzerGruppe = 'L_Kalender_Nutzer',
   [string]$AdAdminGruppe = 'L_Kalender_Admins',
+  [string]$AdServer = '',
   [switch]$OhneAD,
   [switch]$Entfernen
 )
@@ -70,7 +73,7 @@ if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
 }
 $action    = New-ScheduledTaskAction -Execute 'powershell.exe' `
                -Argument ("-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$Script`" -Port $Port " +
-                          $(if ($OhneAD) { '-OhneAD' } else { "-AdNutzerGruppe `"$AdNutzerGruppe`" -AdAdminGruppe `"$AdAdminGruppe`"" })) `
+                          $(if ($OhneAD) { '-OhneAD' } else { "-AdNutzerGruppe `"$AdNutzerGruppe`" -AdAdminGruppe `"$AdAdminGruppe`"" + $(if ($AdServer) { " -AdServer `"$AdServer`"" } else { '' }) })) `
                -WorkingDirectory $PSScriptRoot
 $trigger   = New-ScheduledTaskTrigger -AtStartup
 $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
