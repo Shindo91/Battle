@@ -138,6 +138,7 @@ function Get-CleanText($s, [int]$max) {
 
 $script:Persons = New-Object System.Collections.ArrayList
 $script:Categories = New-Object System.Collections.ArrayList
+$script:Groups = New-Object System.Collections.ArrayList
 $script:Entries = New-Object System.Collections.ArrayList
 $script:Region = 'DE'
 $script:Version = 1
@@ -221,12 +222,33 @@ function ConvertTo-CategoryList($list) {
   return ,$out
 }
 
+# Gruppen von Personen (nur zur Auswahl/Anzeige; Rechte gelten weiter je Person)
+function ConvertTo-GroupList($list) {
+  $out = New-Object System.Collections.ArrayList
+  $seen = @{}
+  foreach ($g in @($list)) {
+    $id = Get-Prop $g 'id'
+    if (-not (Test-Id $id) -or $seen.ContainsKey($id)) { continue }
+    $name = Get-CleanText (Get-Prop $g 'name') 30
+    if (-not $name) { continue }
+    $members = @()
+    foreach ($m in @(Get-Prop $g 'members')) {
+      if ((Test-Id $m) -and (Test-PersonExists $m) -and ($members -notcontains $m)) { $members += $m }
+    }
+    $seen[$id] = $true
+    [void]$out.Add([ordered]@{ id = $id; name = $name; members = $members })
+  }
+  if ($out.Count -gt 50) { throw (New-HttpError 400 'Höchstens 50 Gruppen.') }
+  return ,$out
+}
+
 function Import-CalendarData($data, [ref]$skipped) {
   $script:Persons = ConvertTo-PersonList (Get-Prop $data 'persons')
   $cats = Get-Prop $data 'categories'
   $script:Categories = $(if ($null -eq $cats) { ConvertTo-CategoryList $DefaultCategories } else { ConvertTo-CategoryList $cats })
   $r = Get-Prop $data 'holidayRegion'
   $script:Region = $(if ($Regions -contains $r) { $r } else { 'DE' })
+  $script:Groups = ConvertTo-GroupList (Get-Prop $data 'groups')
   $script:Entries = New-Object System.Collections.ArrayList
   $ids = @{}
   $skip = 0
@@ -250,7 +272,7 @@ function Save-Calendar {
   }
   Write-JsonFile $CalFile ([ordered]@{
     version = $script:Version; holidayRegion = $script:Region
-    persons = $script:Persons; categories = $script:Categories; entries = $script:Entries
+    persons = $script:Persons; categories = $script:Categories; groups = $script:Groups; entries = $script:Entries
   })
 }
 
@@ -425,8 +447,13 @@ function Get-CalendarView($user) {
     if (-not (Test-CanEditEntry $user $e)) { $o._ro = $true }
     [void]$entries.Add($o)
   }
+  $groups = New-Object System.Collections.ArrayList
+  foreach ($g in $script:Groups) {
+    $m = @($g.members | Where-Object { (Get-Perm $user $_) -ne 'none' })
+    if ($m.Count -gt 0) { [void]$groups.Add([ordered]@{ id = $g.id; name = $g.name; members = $m }) }
+  }
   return [ordered]@{ version = $script:Version; holidayRegion = $script:Region; persons = $persons
-                     categories = $script:Categories; entries = $entries }
+                     categories = $script:Categories; groups = $groups; entries = $entries }
 }
 
 function Find-EntryIndex([string]$id) {
@@ -595,6 +622,7 @@ function Invoke-Request($ctx) {
     $script:Persons = $persons
     $script:Categories = $cats
     $script:Region = $region
+    $script:Groups = ConvertTo-GroupList (Get-Prop $body 'groups')   # nach den Personen prüfen
     Remove-PersonReferences $removed
     Save-Calendar
     Write-Log "Einstellungen geändert von $($user.name)"
@@ -604,7 +632,7 @@ function Invoke-Request($ctx) {
   if ($path -eq '/api/export' -and $method -eq 'GET') {
     Assert-Admin $user
     Send-Json $ctx 200 ([ordered]@{ holidayRegion = $script:Region; persons = $script:Persons
-                                    categories = $script:Categories; entries = $script:Entries }) $null
+                                    categories = $script:Categories; groups = $script:Groups; entries = $script:Entries }) $null
     return
   }
   if ($path -eq '/api/import' -and $method -eq 'POST') {

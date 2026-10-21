@@ -33,18 +33,18 @@
   /* Dunkles Design: automatisch nach Systemeinstellung oder fest per Umschalter */
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #2a2f37; --panel: #353b44; --text: #f5f6f8; --muted: #cfd5de; --line: #525b68;
-      --weekend: #444b56; --holiday: #6b3342; --holiday-text: #ffb4c2; --today: #f43f5e; --accent: #5b9bff;
-      --strong-line: #78828f; --hover: #3e5f8c; --sel: #4a79b8; --warn: #f59e0b; --warn-bg: #74560f; --warn-text: #fde68a; --wd-bg: #3d434d; --invalid-a: #30353d; --invalid-b: #3a4049;
-      --input-border: #66707e; --danger: #fca5a5; --danger-border: #b91c1c;
+      --bg: #1e2024; --panel: #2a2d32; --text: #eef0f3; --muted: #aab1bc; --line: #3b3f46;
+      --weekend: #232529; --holiday: #3b2a30; --holiday-text: #f5a6b6; --today: #f0506e; --accent: #6ea8fe;
+      --strong-line: #5a5f68; --hover: #343f55; --sel: #3e5b8c; --warn: #f5b942; --warn-bg: #4a3c14; --warn-text: #fcd98a; --wd-bg: #33363c; --invalid-a: #24262a; --invalid-b: #2b2e33;
+      --input-border: #4b5058; --danger: #f4a3a3; --danger-border: #a33a3a;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #2a2f37; --panel: #353b44; --text: #f5f6f8; --muted: #cfd5de; --line: #525b68;
-    --weekend: #444b56; --holiday: #6b3342; --holiday-text: #ffb4c2; --today: #f43f5e; --accent: #5b9bff;
-    --strong-line: #78828f; --hover: #3e5f8c; --sel: #4a79b8; --warn: #f59e0b; --warn-bg: #74560f; --warn-text: #fde68a; --wd-bg: #3d434d; --invalid-a: #30353d; --invalid-b: #3a4049;
-    --input-border: #66707e; --danger: #fca5a5; --danger-border: #b91c1c;
+    --bg: #1e2024; --panel: #2a2d32; --text: #eef0f3; --muted: #aab1bc; --line: #3b3f46;
+    --weekend: #232529; --holiday: #3b2a30; --holiday-text: #f5a6b6; --today: #f0506e; --accent: #6ea8fe;
+    --strong-line: #5a5f68; --hover: #343f55; --sel: #3e5b8c; --warn: #f5b942; --warn-bg: #4a3c14; --warn-text: #fcd98a; --wd-bg: #33363c; --invalid-a: #24262a; --invalid-b: #2b2e33;
+    --input-border: #4b5058; --danger: #f4a3a3; --danger-border: #a33a3a;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -74,9 +74,24 @@
   .seg button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
   .seg button:last-child { border-radius: 0 6px 6px 0; }
   .seg button.active { background: var(--text); border-color: var(--text); color: var(--panel); }
-  .legend { display: flex; gap: 14px; margin-left: 12px; flex-wrap: wrap; }
-  .legend span { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
-  .legend i { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+  .pfilter { position: relative; margin-left: 8px; }
+  #pfBtn { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+  #pfBtn .dots { display: inline-flex; gap: 3px; }
+  #pfBtn .dots i { width: 10px; height: 10px; border-radius: 3px; }
+  #pfBtn .caret { color: var(--muted); font-size: .8em; }
+  .pf-panel {
+    position: absolute; top: calc(100% + 6px); left: 0; z-index: 40; min-width: 260px; max-height: 70vh; overflow: auto;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.3);
+  }
+  .pf-head { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 8px 8px 4px; }
+  .pf-actions { display: flex; gap: 6px; padding: 4px; }
+  .pf-actions button { flex: 1; padding: 4px 8px; font-size: .9rem; }
+  .pf-row { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; }
+  .pf-row:hover { background: var(--hover); }
+  .pf-row i { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+  .pf-name { flex: 1; white-space: nowrap; }
+  .pf-only { padding: 1px 8px; font-size: .78rem; visibility: hidden; }
+  .pf-row:hover .pf-only { visibility: visible; }
   .spacer { flex: 1; }
   button {
     font: inherit;
@@ -264,18 +279,21 @@
   .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
   .actions .left { margin-right: auto; }
   .err { color: var(--danger); font-size: .9rem; min-height: 1.2em; }
+  label.check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+  .group-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
+  .group-row .gmain { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .group-row .gmembers { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .9rem; }
+  .group-row .gmembers label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+  .group-row .gmembers i { width: 9px; height: 9px; border-radius: 50%; }
   .settings-person { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
   .settings-person input[type=text] { flex: 1; }
   .settings-person label { display: inline-flex; align-items: center; gap: 4px; font-size: .85rem; color: var(--muted); white-space: nowrap; cursor: pointer; }
   .settings-person button { padding: 4px 9px; }
-  .legend span { cursor: pointer; user-select: none; }
   @media (max-width: 1500px) {
     header { gap: 8px; padding: 6px 10px; }
     header h1 { font-size: 1.3rem; }
     header button { padding: 5px 9px; }
-    .legend { margin-left: 4px; gap: 10px; }
   }
-  .legend span.off { opacity: .4; text-decoration: line-through; }
 
 
   /* Senkrechte Ausrichtung: Tage nach unten, Monate/Personen als Spalten */
@@ -366,6 +384,7 @@
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     header { border: none; padding: 0 0 3mm; }
     header > :not(h1) { display: none !important; }
+    .pf-panel { display: none !important; }
     header h1 { text-align: left; font-size: 16pt; }
     main { padding: 0; height: 176mm; }
     #calendar { height: 100%; }
@@ -394,7 +413,10 @@
   <h1 id="yearLabel"></h1>
   <button id="nextYear" title="Weiter (→)">▶</button>
   <button id="todayBtn">Heute</button>
-  <div class="legend" id="legend"></div>
+  <div class="pfilter" id="pfilter">
+    <button type="button" id="pfBtn" aria-haspopup="true"></button>
+    <div class="pf-panel" id="pfPanel" hidden></div>
+  </div>
   <div class="spacer"></div>
   <button class="primary" id="addBtn">+ Eintrag</button>
   <button id="settingsBtn">Einstellungen</button>
@@ -534,6 +556,7 @@
     <p class="hint" id="fSeriesHint">↻ Wiederkehrender Eintrag – Änderungen und Löschen gelten für die ganze Serie.</p>
     <div class="row">
       <span class="cap">Person(en)</span>
+      <div class="chips" id="fGroups"></div>
       <div class="persons" id="fPersons"></div>
     </div>
     <div class="row">
@@ -567,9 +590,18 @@
       <div><button type="button" id="sAddPerson">+ Person hinzufügen</button></div>
     </div>
     <div class="row admin-only">
+      <span class="cap">Gruppen (zum schnellen Auswählen oben und beim Eintragen)</span>
+      <div id="sGroups"></div>
+      <div><button type="button" id="sAddGroup">+ Gruppe hinzufügen</button></div>
+    </div>
+    <div class="row admin-only">
       <span class="cap">Kategorien (Häkchen = zählt als abwesend)</span>
       <div id="sCats"></div>
       <div><button type="button" id="sAddCat">+ Kategorie hinzufügen</button></div>
+    </div>
+    <div class="row">
+      <span class="cap">Persönliche Anzeige (nur für dich in diesem Browser)</span>
+      <label class="check"><input type="checkbox" id="sHolidays"> Feiertage anzeigen</label>
     </div>
     <div class="row">
       <span class="cap">Am Monitor: bei Inaktivität zurück zu „Heute“</span>
@@ -631,6 +663,7 @@
   // Ältere Speicherstände ohne Kategorien ergänzen
   function normalize(s) {
     if (!Array.isArray(s.categories)) s.categories = clone(DEFAULT_CATEGORIES);
+    if (!Array.isArray(s.groups)) s.groups = [];
     return s;
   }
 
@@ -684,12 +717,20 @@
   const canEditPerson = id => !SERVER || (!isDisplay() && !!state.persons.find(p => p.id === id)?.canEdit);
   const canEditEntry = e => !isDisplay() && !e._ro && e.persons.every(canEditPerson);
 
-  // Ausgeblendete Personen gelten nur für diesen Browser
-  const HIDDEN_KEY = 'jahreskalender.hidden';
+  // Persönliche Anzeige-Einstellungen (ausgeblendete Personen, Feiertage): je Browser und – im
+  // Serverbetrieb – je angemeldetem Benutzer
+  const prefKey = k => `jahreskalender.${k}${SERVER && me ? '.' + me.id : ''}`;
+  const readPref = (k, fallback) => { try { const v = JSON.parse(localStorage.getItem(prefKey(k))); return v ?? fallback; } catch (e) { return fallback; } };
+  const writePref = (k, v) => { try { localStorage.setItem(prefKey(k), JSON.stringify(v)); } catch (e) { /* egal */ } };
   let hiddenIds = new Set();
-  try { hiddenIds = new Set(JSON.parse(localStorage.getItem(HIDDEN_KEY)) || []); } catch (e) { /* egal */ }
+  let showHolidays = true;
+  function loadPrefs() {
+    hiddenIds = new Set(readPref('hidden', []));
+    showHolidays = readPref('holidays', true) !== false;
+  }
+  loadPrefs();
   state.persons.forEach(p => { if (p.hidden) { hiddenIds.add(p.id); delete p.hidden; } }); // ältere Speicherstände
-  const saveHidden = () => { try { localStorage.setItem(HIDDEN_KEY, JSON.stringify([...hiddenIds])); } catch (e) { /* egal */ } };
+  const saveHidden = () => writePref('hidden', [...hiddenIds]);
 
   // ---------- Datum-Helfer (lokale Zeit, Format YYYY-MM-DD) ----------
   const pad = n => String(n).padStart(2, '0');
@@ -820,6 +861,7 @@
 
   const holidayCache = new Map();
   function holidayName(date) {
+    if (!showHolidays) return '';
     const y = +date.slice(0, 4);
     if (!holidayCache.has(y)) holidayCache.set(y, computeHolidays(y, state.holidayRegion || 'DE'));
     return holidayCache.get(y).get(date) || '';
@@ -1170,27 +1212,82 @@
     render();
   }
 
-  function renderLegend() {
-    const lg = document.getElementById('legend');
-    lg.replaceChildren(...state.persons.map(p => {
-      const off = hiddenIds.has(p.id);
-      const s = el('span', off ? 'off' : '');
-      s.append(el('i', null, { background: p.color }), document.createTextNode(p.name));
-      s.title = off ? 'Ausgeblendet – klicken zum Einblenden' : 'Klicken zum Ausblenden';
-      s.addEventListener('click', () => {
-        if (!off && visiblePersons().length === 1) return; // mindestens eine Person bleibt sichtbar
-        if (off) hiddenIds.delete(p.id); else hiddenIds.add(p.id);
-        saveHidden();
-        render();
-      });
-      return s;
-    }));
+  // ---------- Personen-Auswahl (Dropdown oben) ----------
+  // Gruppen und einzelne Personen ein-/ausblenden; gilt nur für diesen Browser bzw. Benutzer.
+  const pfBtn = document.getElementById('pfBtn');
+  const pfPanel = document.getElementById('pfPanel');
+  function setVisible(ids) {
+    if (!ids.length) { showToast('Mindestens eine Person muss sichtbar bleiben.'); return; }
+    hiddenIds = new Set(state.persons.map(p => p.id).filter(id => !ids.includes(id)));
+    saveHidden();
+    render();
   }
+  const groupsOf = () => state.groups.filter(g => g.members.some(id => personById(id)));
+  function renderLegend() {
+    const vis = visiblePersons().map(p => p.id);
+    const all = state.persons.length;
+    const same = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+    const g = groupsOf().find(x => same(x.members.filter(id => personById(id)), vis));
+    pfBtn.replaceChildren(Object.assign(el('span', 'dots'), {}), document.createTextNode(
+      vis.length === all ? 'Alle Personen' : g ? g.name : `${vis.length} von ${all} Personen`), Object.assign(el('span', 'caret'), { textContent: '▾' }));
+    pfBtn.firstChild.append(...visiblePersons().slice(0, 6).map(p => el('i', null, { background: p.color })));
+    pfBtn.title = 'Angezeigte Personen und Gruppen auswählen';
 
+    const rows = [];
+    const head = (t) => rows.push(Object.assign(el('div', 'pf-head'), { textContent: t }));
+    const row = (label, color, state3, onToggle, onOnly) => {
+      const r = el('label', 'pf-row');
+      const cb = Object.assign(el('input'), { type: 'checkbox', checked: state3 === true, indeterminate: state3 === null });
+      cb.addEventListener('change', onToggle);
+      r.append(cb);
+      if (color) r.append(el('i', null, { background: color }));
+      r.append(Object.assign(el('span', 'pf-name'), { textContent: label }));
+      if (onOnly) {
+        const o = Object.assign(el('button', 'pf-only'), { type: 'button', textContent: 'nur diese', title: 'Nur diese anzeigen' });
+        o.addEventListener('click', ev => { ev.preventDefault(); onOnly(); });
+        r.append(o);
+      }
+      rows.push(r);
+    };
+    const top = el('div', 'pf-actions');
+    const allBtn = Object.assign(el('button'), { type: 'button', textContent: 'Alle anzeigen' });
+    allBtn.addEventListener('click', () => setVisible(state.persons.map(p => p.id)));
+    top.append(allBtn);
+    rows.push(top);
+    const groups = groupsOf();
+    if (groups.length) {
+      head('Gruppen');
+      groups.forEach(gr => {
+        const m = gr.members.filter(id => personById(id));
+        const on = m.filter(id => vis.includes(id)).length;
+        row(`${gr.name} (${m.length})`, null, on === m.length ? true : on ? null : false,
+          () => setVisible(on === m.length ? vis.filter(id => !m.includes(id)) : [...new Set([...vis, ...m])]),
+          () => setVisible(m));
+      });
+    }
+    head('Personen');
+    state.persons.forEach(p => {
+      const on = vis.includes(p.id);
+      row(p.name, p.color, on, () => setVisible(on ? vis.filter(id => id !== p.id) : [...vis, p.id]), () => setVisible([p.id]));
+    });
+    pfPanel.replaceChildren(...rows);
+  }
+  pfBtn.addEventListener('click', () => { pfPanel.hidden = !pfPanel.hidden; });
+  // Klick daneben schließt nur die Auswahl (und legt nicht nebenbei einen Eintrag an)
+  document.addEventListener('pointerdown', e => {
+    if (pfPanel.hidden || e.target.closest('#pfilter')) return;
+    pfPanel.hidden = true;
+    e.preventDefault();
+    e.stopPropagation();
+  }, true);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') pfPanel.hidden = true; });
+
+  // Schrift auf farbigen Balken: Schwarz oder Weiß – je nachdem, was mehr Kontrast hat (WCAG)
   function textColorFor(hex) {
     const h = hex.replace('#', '');
-    const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
-    return (0.299 * r + 0.587 * g + 0.114 * b) > 160 ? '#111827' : '#ffffff';
+    const lin = i => { const c = parseInt(h.slice(i, i + 2), 16) / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+    const L = 0.2126 * lin(0) + 0.7152 * lin(2) + 0.0722 * lin(4);
+    return (L + 0.05) / 0.05 > 1.05 / (L + 0.05) ? '#111827' : '#ffffff';
   }
   const personById = id => state.persons.find(p => p.id === id);
   const visiblePersons = () => {
@@ -1448,6 +1545,30 @@
       l.append(cb, el('i', null, { width: '10px', height: '10px', borderRadius: '50%', background: p.color, display: 'inline-block' }), document.createTextNode(p.name));
       return l;
     }));
+    // Gruppe anklicken = alle (bearbeitbaren) Mitglieder an- bzw. abwählen
+    const fGroups = document.getElementById('fGroups');
+    const boxes = () => [...fPersons.querySelectorAll('input')];
+    fGroups.replaceChildren(...(entryReadOnly ? [] : groupsOf()).map(gr => {
+      const ids = gr.members.filter(id => choices.some(p => p.id === id));
+      if (!ids.length) return null;
+      const b = el('button');
+      b.type = 'button';
+      b.title = 'Alle Mitglieder der Gruppe auswählen';
+      b.append(Object.assign(el('span'), { textContent: '👥' }), gr.name);
+      b.dataset.ids = ids.join(' ');
+      b.addEventListener('click', () => {
+        const mine = boxes().filter(c => ids.includes(c.value));
+        const allOn = mine.every(c => c.checked);
+        mine.forEach(c => { c.checked = !allOn; });
+        markGroups();
+      });
+      return b;
+    }).filter(Boolean));
+    // Gruppe hervorheben, wenn alle ihre Mitglieder angehakt sind
+    const markGroups = () => fGroups.querySelectorAll('button').forEach(b => b.classList.toggle('active',
+      b.dataset.ids.split(' ').every(id => boxes().some(c => c.value === id && c.checked))));
+    fPersons.onchange = markGroups;
+    markGroups();
     fError.textContent = '';
     renderCats();
     renderSwatches();
@@ -1541,7 +1662,7 @@
       vis.title = 'In diesem Browser anzeigen'; vis.append(cb, 'anzeigen');
       const del = el('button', 'danger'); del.type = 'button'; del.textContent = '✕'; del.title = 'Person entfernen';
       del.disabled = draft.length === 1;
-      del.addEventListener('click', () => { draft = draft.filter(x => x !== p); renderDraft(); });
+      del.addEventListener('click', () => { draft = draft.filter(x => x !== p); renderDraft(); renderGroupDraft(); });
       row.append(c, n, vis, del);
       return row;
     }));
@@ -1582,16 +1703,51 @@
   let idle = { view: 'year', minutes: 5 };
   try { const v = JSON.parse(localStorage.getItem(IDLE_KEY)); if (v && (VIEWS[v.view] || v.view === 'off')) idle = v; } catch (e) { /* egal */ }
 
+  // Gruppen als Arbeitskopie; Mitglieder aus der (evtl. geänderten) Personenliste
+  const sGroups = document.getElementById('sGroups');
+  let groupDraft = [];
+  function renderGroupDraft() {
+    sGroups.replaceChildren(...groupDraft.map(g => {
+      const row = el('div', 'group-row');
+      const main = el('div', 'gmain');
+      const n = Object.assign(el('input'), { type: 'text', value: g.name, maxLength: 30, placeholder: 'Name der Gruppe' });
+      n.addEventListener('input', () => { g.name = n.value; });
+      const mem = el('div', 'gmembers');
+      draft.forEach(p => {
+        const l = el('label');
+        const cb = Object.assign(el('input'), { type: 'checkbox', checked: g.members.includes(p.id) });
+        cb.addEventListener('change', () => { g.members = cb.checked ? [...g.members, p.id] : g.members.filter(id => id !== p.id); });
+        l.append(cb, el('i', null, { background: p.color }), p.name || '–');
+        mem.append(l);
+      });
+      main.append(n, mem);
+      const del = Object.assign(el('button', 'danger'), { type: 'button', textContent: '✕', title: 'Gruppe entfernen (Personen bleiben erhalten)' });
+      del.addEventListener('click', () => { groupDraft = groupDraft.filter(x => x !== g); renderGroupDraft(); });
+      row.append(main, del);
+      return row;
+    }));
+  }
+  document.getElementById('sAddGroup').addEventListener('click', () => {
+    groupDraft.push({ id: newId('g'), name: '', members: [] });
+    renderGroupDraft();
+    sGroups.querySelector('.group-row:last-child input[type=text]').focus();
+  });
+  const sHolidays = document.getElementById('sHolidays');
+
   document.getElementById('sAddPerson').addEventListener('click', () => {
     const used = new Set(draft.map(p => p.color));
     draft.push({ id: newId('p'), name: `Person ${draft.length + 1}`, color: PALETTE.find(c => !used.has(c)) || PALETTE[0] });
     renderDraft();
+    renderGroupDraft();
     sPersons.querySelector('.settings-person:last-child input[type=text]').select();
   });
 
   document.getElementById('settingsBtn').addEventListener('click', () => {
     draft = state.persons.map(p => ({ id: p.id, name: p.name, color: p.color, hidden: hiddenIds.has(p.id) }));
     renderDraft();
+    groupDraft = clone(state.groups);
+    renderGroupDraft();
+    sHolidays.checked = showHolidays;
     document.querySelectorAll('#settingsDialog .admin-only').forEach(x => { x.hidden = !isAdmin(); });
     document.getElementById('sAccount').hidden = !SERVER;
     document.getElementById('sUsersBtn').hidden = !(SERVER && isAdmin());
@@ -1606,7 +1762,12 @@
   document.getElementById('settingsForm').addEventListener('submit', async ev => {
     idle = { view: sIdleView.value, minutes: Math.max(1, Math.min(120, +sIdleMin.value || 5)) };
     try { localStorage.setItem(IDLE_KEY, JSON.stringify(idle)); } catch (e) { /* egal */ }
-    if (!isAdmin()) { showToast('Einstellungen gespeichert'); return; }
+    if (showHolidays !== sHolidays.checked) {
+      showHolidays = sHolidays.checked;
+      writePref('holidays', showHolidays);
+      holidayCache.clear();
+    }
+    if (!isAdmin()) { render(); showToast('Einstellungen gespeichert'); return; }
 
     const ids = new Set(draft.map(p => p.id));
     const removed = state.persons.filter(p => !ids.has(p.id));
@@ -1623,10 +1784,12 @@
     hiddenIds = new Set(draft.filter(p => p.hidden).map(p => p.id));
     saveHidden();
     const persons = draft.map(({ id, name, color }) => ({ id, name, color }));
+    const groups = groupDraft
+      .map((g, i) => ({ id: g.id, name: g.name.trim() || `Gruppe ${i + 1}`, members: g.members.filter(id => ids.has(id)) }));
 
     if (SERVER) {
       try {
-        await api('PUT', '/api/settings', { persons, categories: catDraft, holidayRegion: sRegion.value });
+        await api('PUT', '/api/settings', { persons, categories: catDraft, groups, holidayRegion: sRegion.value });
         await reloadData();
         showToast('Einstellungen gespeichert');
       } catch (e) { showToast('Nicht gespeichert: ' + e.message); }
@@ -1646,6 +1809,7 @@
       if (old && old.color !== now.color && e.color === old.color) e.color = now.color;
     });
     state.persons = persons;
+    state.groups = groups;
     state.categories = catDraft;
     state.holidayRegion = sRegion.value;
     holidayCache.clear();
@@ -1801,7 +1965,7 @@
 
   // ---------- Server: Daten laden und aktuell halten ----------
   function applyData(d) {
-    state = normalize({ persons: d.persons, categories: d.categories, entries: d.entries, holidayRegion: d.holidayRegion });
+    state = normalize({ persons: d.persons, categories: d.categories, groups: d.groups, entries: d.entries, holidayRegion: d.holidayRegion });
     dataVersion = d.version;
     holidayCache.clear();
     render();
@@ -1886,6 +2050,8 @@
     if (me.mustChange) { document.body.classList.add('locked'); showPasswordDialog(true); return; }
     document.body.classList.remove('locked');
     undoStack.length = 0;
+    loadPrefs();
+    holidayCache.clear();
     try { await reloadData(); } catch (e) { showToast(e.message); }
   }
 

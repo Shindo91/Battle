@@ -48,7 +48,9 @@ eigenes Passwort vergeben.
 
 ## 3. Kalender einrichten (im Browser als admin)
 
-1. **Einstellungen** → Personen benennen/anlegen, Kategorien, Bundesland für Feiertage.
+1. **Einstellungen** → Personen benennen/anlegen, **Gruppen** bilden, Kategorien, Bundesland für Feiertage.
+   (Gruppen dienen nur der Auswahl; die Rechte gelten weiterhin je Person. Benutzer sehen in einer Gruppe
+   nur die Mitglieder, für die sie freigegeben sind.)
 2. Vorhandene Einträge aus der Einzelplatz-Version übernehmen: dort *Einstellungen → Exportieren*,
    hier *Einstellungen → Importieren*.
 3. **Einstellungen → Benutzer verwalten**:

@@ -109,8 +109,11 @@ Keine Installation, kein Server.
 - **Drucken** (Drucker-Symbol): aktuelle Ansicht auf A4 quer, immer im hellen Design, auch als PDF.
 - **Feiertage** (Deutschland) werden rosa markiert und mit Namen beschriftet (in Jahr/Halbjahr/Quartal in der Tagesspalte, in Monats- und
   Wochenansicht unter dem Datum). Bundesland in den Einstellungen wählbar; wird für jedes Jahr automatisch berechnet.
-- **Personen**: beliebig viele (Standard 3). In den Einstellungen hinzufügen, umbenennen, Farbe ändern,
-  entfernen oder per Häkchen ausblenden. Schnell aus-/einblenden durch Klick auf den Namen oben in der Kopfzeile.
+- **Personen & Gruppen**: beliebig viele Personen (Standard 3), in den Einstellungen anlegen, umbenennen,
+  einfärben, entfernen. **Gruppen** fassen Personen zusammen (z. B. „Team Nord“). Oben wählt ein **Dropdown**
+  aus, welche Gruppen/Personen angezeigt werden („nur diese“ zeigt genau eine Gruppe/Person); im
+  Eintrags-Dialog wählt ein Klick auf eine Gruppe alle Mitglieder aus.
+- **Feiertage ein/aus**: jeder Benutzer kann sie in den Einstellungen für sich ausblenden.
 - **Ausrichtung**: Button *⇅ Senkrecht* / *⇄ Waagerecht* (oder Taste `O`) – Tage laufen wahlweise von links nach
   rechts oder von oben nach unten (Monate bzw. Personen dann als Spalten). Wird pro Browser gemerkt.
 - **Hell/Dunkel**: Button in der Kopfzeile schaltet zwischen *Auto* (wie System), *Hell* und *Dunkel*.
