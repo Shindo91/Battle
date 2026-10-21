@@ -110,7 +110,7 @@ Write-Log ("Aktualisiert: " + ($changed -join ', ') + "  (alte Versionen: $backu
 
 # 3. Server neu starten, wenn sich das Server-Skript geändert hat
 if ($changed -contains 'kalender-server.ps1') {
-  if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
+  if ((Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue) -and (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue)) {
     Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 2
     Start-ScheduledTask -TaskName $TaskName
