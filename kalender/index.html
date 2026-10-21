@@ -29,18 +29,18 @@
   /* Dunkles Design: automatisch nach Systemeinstellung oder fest per Umschalter */
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #0e1116; --panel: #171b22; --text: #e6e8ec; --muted: #9aa3b2; --line: #2a303a;
-      --weekend: #1f242d; --holiday: #3b1a24; --holiday-text: #fb7185; --today: #f43f5e; --accent: #3b82f6;
-      --strong-line: #3d4552; --hover: #1e3a5f; --wd-bg: #1b2028; --invalid-a: #13171d; --invalid-b: #1b2028;
-      --input-border: #3d4552; --danger: #f87171; --danger-border: #7f1d1d;
+      --bg: #101318; --panel: #1b2028; --text: #f3f4f6; --muted: #c4cbd6; --line: #3a424f;
+      --weekend: #282f3a; --holiday: #4c1f2b; --holiday-text: #ff9db0; --today: #f43f5e; --accent: #4f8ff7;
+      --strong-line: #5d6778; --hover: #24456f; --wd-bg: #232933; --invalid-a: #14181e; --invalid-b: #1f242c;
+      --input-border: #4b5464; --danger: #fca5a5; --danger-border: #991b1b;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0e1116; --panel: #171b22; --text: #e6e8ec; --muted: #9aa3b2; --line: #2a303a;
-    --weekend: #1f242d; --holiday: #3b1a24; --holiday-text: #fb7185; --today: #f43f5e; --accent: #3b82f6;
-    --strong-line: #3d4552; --hover: #1e3a5f; --wd-bg: #1b2028; --invalid-a: #13171d; --invalid-b: #1b2028;
-    --input-border: #3d4552; --danger: #f87171; --danger-border: #7f1d1d;
+    --bg: #101318; --panel: #1b2028; --text: #f3f4f6; --muted: #c4cbd6; --line: #3a424f;
+    --weekend: #282f3a; --holiday: #4c1f2b; --holiday-text: #ff9db0; --today: #f43f5e; --accent: #4f8ff7;
+    --strong-line: #5d6778; --hover: #24456f; --wd-bg: #232933; --invalid-a: #14181e; --invalid-b: #1f242c;
+    --input-border: #4b5464; --danger: #fca5a5; --danger-border: #991b1b;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -103,8 +103,8 @@
   }
   #calendar.view-half { font-size: clamp(10px, 1.6vh, 17px); }
   #calendar.view-quarter { font-size: clamp(11px, 1.8vh, 18px); }
-  .wd .dt { margin-left: .3em; font-weight: 400; }
-  .wd.today .dt, .wd.holiday .dt { font-weight: 700; }
+  .wd .dt { margin-left: .3em; }
+  #calendar.compact .wd .mo { display: none; }
   #calendar.view-month { font-size: clamp(11px, 1.7vh, 18px); }
   #calendar.view-week { font-size: clamp(13px, 2.2vh, 24px); }
   .month { cursor: pointer; }
@@ -135,7 +135,8 @@
     border-right: 1px solid var(--line);
     white-space: nowrap;
     overflow: hidden;
-    color: var(--muted);
+    color: var(--text);
+    font-weight: 500;
   }
   .person i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
   .person.last, .day.last { border-bottom: 2px solid var(--strong-line); }
@@ -169,8 +170,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: min(0.8em, 11px);
-    color: var(--muted);
+    font-size: var(--wd-fs, min(0.85em, 12px));
+    font-weight: 600;
+    color: var(--text);
     border-right: 1px solid var(--line);
     border-bottom: 1px solid var(--line);
     background: var(--wd-bg);
@@ -250,6 +252,12 @@
   .settings-person label { display: inline-flex; align-items: center; gap: 4px; font-size: .85rem; color: var(--muted); white-space: nowrap; cursor: pointer; }
   .settings-person button { padding: 4px 9px; }
   .legend span { cursor: pointer; user-select: none; }
+  @media (max-width: 1500px) {
+    header { gap: 8px; padding: 6px 10px; }
+    header h1 { font-size: 1.3rem; }
+    header button { padding: 5px 9px; }
+    .legend { margin-left: 4px; gap: 10px; }
+  }
   .legend span.off { opacity: .4; text-decoration: line-through; }
 </style>
 </head>
@@ -531,7 +539,7 @@
 
     // Pro Band: Zeile mit Wochentag + Datum, darunter eine Zeile je sichtbarer Person.
     // Jahr/Quartal/Halbjahr zusätzlich mit Monatsname links.
-    cal.style.gridTemplateColumns = `${single ? '0' : '4.2rem'} ${single ? '8rem' : '5.5rem'} repeat(${cols}, minmax(0, 1fr))`;
+    cal.style.gridTemplateColumns = `${single ? '0' : '4.2rem'} minmax(${single ? '8rem' : '5.5rem'}, max-content) repeat(${cols}, minmax(0, 1fr))`;
     cal.style.gridTemplateRows =
       `repeat(${bands.length}, ${single ? '3.8em' : '1.4em'} ${' minmax(0, 1fr)'.repeat(n)})`;
 
@@ -562,8 +570,9 @@
             w.append(b, d);
             if (hol) { const h = el('span', 'hname'); h.textContent = hol; w.appendChild(h); }
           } else {
-            const dt = el('span', 'dt');
-            dt.textContent = `${pad(dd)}.${pad(mm)}.`;
+            const dt = el('span', 'dt'), mo = el('span', 'mo');
+            mo.textContent = `${pad(mm)}.`;
+            dt.append(`${pad(dd)}.`, mo);
             w.append(WEEKDAYS[wd], dt);
           }
           w.title = `${WEEKDAYS[wd]}, ${fmt(date)}${hol ? ' – ' + hol : ''}${view === 'week' ? '' : '\n(Klick: Wochenansicht)'}`;
@@ -612,7 +621,23 @@
       });
       row += n + 1;
     });
+    fitDates();
   }
+
+  // Schriftgröße der Datumszeile an die Spaltenbreite anpassen (Jahr/Halbjahr/Quartal).
+  // Ist es zu eng für „Mo 02.02.“, wird der Monat weggelassen („Mo 02.“).
+  function fitDates() {
+    cal.classList.remove('compact');
+    cal.style.removeProperty('--wd-fs');
+    const cell = cal.querySelector('.wd .dt')?.parentElement;
+    if (!cell || view === 'month' || view === 'week') return;
+    const w = cell.clientWidth - 4;
+    let fs = Math.min(12, w / 5.4);
+    if (fs < 9) { cal.classList.add('compact'); fs = Math.min(12, w / 3.6); }
+    cal.style.setProperty('--wd-fs', `${Math.max(7, fs).toFixed(1)}px`);
+  }
+  let resizeTimer;
+  window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(fitDates, 100); });
 
   // Balken einer Person in einem Band; überlappende Einträge werden in Spuren gestapelt.
   function renderBars(days, person, row, showRange) {
