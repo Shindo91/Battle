@@ -95,12 +95,13 @@ if ($ok) {
   Step 'Domänencontroller gefunden (über DNS)' {
     $o = @(& nltest.exe "/dsgetdc:$($script:cs.Domain)" 2>&1 | ForEach-Object { [string]$_ })
     if ($LASTEXITCODE -ne 0) { throw ($o -join ' ') }
-    $line = @($o | Where-Object { $_ -match '^\s*DC:\s*\\\\' })[0]
+    # nltest antwortet je nach Sprache mit 'DC: \\name' oder 'Domänencontroller: \\name'
+    $line = @($o | Where-Object { $_ -match '^\s*(DC|Dom\S*controller)\s*:\s*\\\\' })[0]
     if (-not $line) { throw ('Kein DC in der Antwort: ' + ($o -join ' ')) }
-    $found = ([string]$line -replace '^\s*DC:\s*\\*', '').Trim()
-    $addr = @($o | Where-Object { $_ -match '^\s*Address:' })[0]
+    $found = ([string]$line -replace '^[^:]*:\s*\\*', '').Trim()
+    $addr = @($o | Where-Object { $_ -match '^\s*(Address|Adresse)\s*:' })[0]
     if (-not $script:dc) { $script:dc = $found }
-    $found + $(if ($addr) { ', ' + ([string]$addr -replace '^\s*Address:\s*\\*', '').Trim() } else { '' })
+    $found + $(if ($addr) { ', ' + ([string]$addr -replace '^[^:]*:\s*\\*', '').Trim() } else { '' })
   } | Out-Null
   Step 'DNS-Auflösung des Domänennamens' {
     $ips = @([Net.Dns]::GetHostAddresses($script:cs.Domain) | ForEach-Object { $_.IPAddressToString })
