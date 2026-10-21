@@ -111,6 +111,8 @@ Keine Installation, kein Server.
   Wochenansicht unter dem Datum). Bundesland in den Einstellungen wählbar; wird für jedes Jahr automatisch berechnet.
 - **Personen**: beliebig viele (Standard 3). In den Einstellungen hinzufügen, umbenennen, Farbe ändern,
   entfernen oder per Häkchen ausblenden. Schnell aus-/einblenden durch Klick auf den Namen oben in der Kopfzeile.
+- **Ausrichtung**: Button *⇅ Senkrecht* / *⇄ Waagerecht* (oder Taste `O`) – Tage laufen wahlweise von links nach
+  rechts oder von oben nach unten (Monate bzw. Personen dann als Spalten). Wird pro Browser gemerkt.
 - **Hell/Dunkel**: Button in der Kopfzeile schaltet zwischen *Auto* (wie System), *Hell* und *Dunkel*.
 - **Einstellungen**: Personen, Kategorien, Inaktivität, Bundesland für Feiertage, Export/Import als JSON.
 - Daten werden im Browser (`localStorage`) gespeichert – per Export/Import auf einen anderen

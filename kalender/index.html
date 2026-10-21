@@ -121,7 +121,6 @@
   .bar .range { font-weight: 400; opacity: .85; margin-left: .6em; font-size: .85em; }
   .view-week .bar { font-size: 1.05em; padding: 0 8px; }
   .month {
-    grid-column: 1;
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -130,7 +129,6 @@
     font-size: 1.15em;
   }
   .person {
-    grid-column: 2;
     display: flex;
     align-items: center;
     gap: 5px;
@@ -278,6 +276,26 @@
   }
   .legend span.off { opacity: .4; text-decoration: line-through; }
 
+
+  /* Senkrechte Ausrichtung: Tage nach unten, Monate/Personen als Spalten */
+  #calendar.vertical .month { justify-content: center; padding: 0; border-bottom: 1px solid var(--line); border-right: 2px solid var(--strong-line); }
+  #calendar.vertical .person.last, #calendar.vertical .day.last { border-bottom: 1px solid var(--line); border-right: 2px solid var(--strong-line); }
+  #calendar.vertical .wd { justify-content: flex-start; padding: 0 5px; }
+  #calendar.vertical .wd.corner { border-bottom: 1px solid var(--line); }
+  #calendar.vertical.view-month .wd, #calendar.vertical.view-week .wd { flex-direction: row; gap: .4em; }
+  #calendar.vertical.view-month .wd .hname, #calendar.vertical.view-week .wd .hname { -webkit-line-clamp: 1; }
+  #calendar.vertical .person { justify-content: center; padding: 4px 2px; }
+  /* In schmalen Spalten (Jahr/Halbjahr/Quartal) Namen und Balkentext hochkant */
+  #calendar.vertical:not(.view-month):not(.view-week) .person { writing-mode: vertical-rl; transform: rotate(180deg); }
+  #calendar.vertical:not(.view-month):not(.view-week) .bar:not(.short) { writing-mode: vertical-rl; padding: 4px 0; }
+  #calendar.vertical .bar { margin: 0 1px; }
+  #calendar.vertical .bar.cont-left { border-radius: 0 0 4px 4px; }
+  #calendar.vertical .bar.cont-right { border-radius: 4px 4px 0 0; }
+  #calendar.vertical .bar.cont-left.cont-right { border-radius: 0; }
+  #calendar.vertical .bar::before, #calendar.vertical .bar::after { left: 0; right: 0; width: auto; height: 7px; cursor: ns-resize; }
+  #calendar.vertical .bar::before { top: 0; bottom: auto; }
+  #calendar.vertical .bar::after { bottom: 0; top: auto; }
+
   /* Info-Leiste unten */
   footer#info {
     display: flex; align-items: center; gap: 16px;
@@ -359,6 +377,7 @@
   <div class="spacer"></div>
   <button class="primary" id="addBtn">+ Eintrag</button>
   <button id="settingsBtn">Einstellungen</button>
+  <button id="orientBtn"></button>
   <button id="printBtn" title="Aktuelle Ansicht drucken / als PDF speichern" aria-label="Drucken">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
   </button>
@@ -686,6 +705,13 @@
   try { const v = localStorage.getItem(VIEW_KEY); if (VIEWS[v]) view = v; } catch (e) { /* egal */ }
   let cursor = startOfDay(new Date());
 
+  // Ausrichtung: waagerecht (Tage nach rechts) oder senkrecht (Tage nach unten); gilt nur für diesen Browser
+  const ORIENT_KEY = 'jahreskalender.orient';
+  let vertical = false;
+  try { vertical = localStorage.getItem(ORIENT_KEY) === 'vertical'; } catch (e) { /* egal */ }
+  // Rasterposition: col = Tagesachse, row = Band-/Personenachse (waagerecht gedacht)
+  const pos = (col, row) => vertical ? { gridRow: col, gridColumn: row } : { gridColumn: col, gridRow: row };
+
   function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
   function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
   const toIso = d => iso(d.getFullYear(), d.getMonth(), d.getDate());
@@ -736,7 +762,7 @@
     document.querySelectorAll('#viewSwitch button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
     renderLegend();
     cal.replaceChildren();
-    cal.className = 'view-' + view;
+    cal.className = 'view-' + view + (vertical ? ' vertical' : '');
     const today = todayIso();
     const cols = bands[0].days.length;
     const persons = visiblePersons();
@@ -745,26 +771,33 @@
     const insts = instances(allDays[0], allDays[allDays.length - 1]);
     const away = allAwayDays(insts, allDays[0], allDays[allDays.length - 1]);
 
-    // Pro Band: Zeile mit Wochentag + Datum, darunter eine Zeile je sichtbarer Person.
-    // Jahr/Quartal/Halbjahr zusätzlich mit Monatsname links.
-    cal.style.gridTemplateColumns = `${single ? '0' : '4.2rem'} minmax(${single ? '8rem' : '5.5rem'}, max-content) repeat(${cols}, minmax(0, 1fr))`;
-    cal.style.gridTemplateRows =
-      `repeat(${bands.length}, ${single ? '3.8em' : '1.4em'} ${' minmax(0, 1fr)'.repeat(n)})`;
+    // Waagerecht: pro Band eine Zeile mit Wochentag + Datum, darunter eine Zeile je sichtbarer Person,
+    // Tage laufen nach rechts. Senkrecht ist alles gespiegelt: Tage laufen nach unten, Bänder/Personen
+    // sind Spalten. Positionen werden immer waagerecht gedacht und bei Bedarf vertauscht (pos).
+    const dayAxis = `repeat(${cols}, minmax(0, 1fr))`;
+    const bandAxis = `repeat(${bands.length}, ${vertical ? 'max-content' : single ? '3.8em' : '1.4em'} ${' minmax(0, 1fr)'.repeat(n)})`;
+    if (vertical) {
+      cal.style.gridTemplateRows = `${single ? '0' : 'auto'} ${single ? 'auto' : 'max-content'} ${dayAxis}`;
+      cal.style.gridTemplateColumns = bandAxis;
+    } else {
+      cal.style.gridTemplateColumns = `${single ? '0' : '4.2rem'} minmax(${single ? '8rem' : '5.5rem'}, max-content) ${dayAxis}`;
+      cal.style.gridTemplateRows = bandAxis;
+    }
 
     let row = 1;
     bands.forEach(band => {
       const wdRow = row;
       if (!single) {
-        const mEl = el('div', 'month', { gridRow: `${wdRow} / span ${n + 1}` });
+        const mEl = el('div', 'month', pos(1, `${wdRow} / span ${n + 1}`));
         mEl.textContent = band.label;
         mEl.title = `${band.title} – Monatsansicht öffnen`;
         mEl.addEventListener('click', () => { cursor = new Date(band.year, band.month, 1); setView('month'); });
         cal.appendChild(mEl);
       }
 
-      cal.appendChild(el('div', 'wd', { gridColumn: 2, gridRow: wdRow }));
+      cal.appendChild(el('div', 'wd corner', pos(2, wdRow)));
       band.days.forEach((date, i) => {
-        const w = el('div', 'wd', { gridColumn: i + 3, gridRow: wdRow });
+        const w = el('div', 'wd', pos(i + 3, wdRow));
         if (!date) {
           w.classList.add('invalid');
         } else {
@@ -798,13 +831,13 @@
       persons.forEach((p, pi) => {
         const r = wdRow + 1 + pi;
         const last = pi === n - 1 ? ' last' : '';
-        const pEl = el('div', 'person' + last, { gridRow: r });
+        const pEl = el('div', 'person' + last, pos(2, r));
         pEl.append(el('i', null, { background: p.color }), document.createTextNode(p.name));
         pEl.title = p.name;
         cal.appendChild(pEl);
 
         band.days.forEach((date, i) => {
-          const c = el('div', 'day' + last, { gridColumn: i + 3, gridRow: r });
+          const c = el('div', 'day' + last, pos(i + 3, r));
           if (!date) {
             c.classList.add('invalid');
           } else {
@@ -826,7 +859,7 @@
       if (!single) band.days.forEach((date, i) => {
         const hol = date && holidayName(date);
         if (!hol) return;
-        const l = el('div', 'hlabel', { gridColumn: i + 3, gridRow: `${wdRow + 1} / span ${n}` });
+        const l = el('div', 'hlabel', pos(i + 3, `${wdRow + 1} / span ${n}`));
         l.textContent = HOLIDAY_SHORT[hol] || hol;
         cal.appendChild(l);
       });
@@ -910,6 +943,7 @@
     cal.style.removeProperty('--wd-fs');
     const cell = cal.querySelector('.wd .dt')?.parentElement;
     if (!cell || view === 'month' || view === 'week') return;
+    if (vertical) { cal.classList.add('compact'); return; } // Monatsname steht oben, „Do 01.“ reicht
     const w = cell.clientWidth - 4;
     let fs = Math.min(12, w / 5.4);
     if (fs < 9) { cal.classList.add('compact'); fs = Math.min(12, w / 3.6); }
@@ -941,20 +975,22 @@
     placed.forEach(({ inst, s, t, lane, contL, contR }) => {
       const e = inst.e;
       const half = e.half && inst.from === inst.to ? e.half : null;
+      // Spuren teilen die Zeile (waagerecht) bzw. Spalte (senkrecht); Versatz relativ zur eigenen Größe
       const b = el('div', 'bar', {
-        gridColumn: `${s + 3} / ${t + 4}`,
-        gridRow: row,
+        ...pos(`${s + 3} / ${t + 4}`, row),
         background: e.color,
         color: textColorFor(e.color),
-        alignSelf: 'start',
-        height: `calc(${100 / n}% - 2px)`,
-        // Spur-Versatz relativ zur eigenen Balkenhöhe
-        transform: `translateY(calc(${lane * 100}% + ${lane * 2}px))`,
+        ...(vertical
+          ? { justifySelf: 'start', width: `calc(${100 / n}% - 2px)`, transform: `translateX(calc(${lane * 100}% + ${lane * 2}px))` }
+          : { alignSelf: 'start', height: `calc(${100 / n}% - 2px)`, transform: `translateY(calc(${lane * 100}% + ${lane * 2}px))` }),
       });
-      if (half) Object.assign(b.style, { width: 'calc(50% - 1px)', justifySelf: half === 'am' ? 'start' : 'end' });
+      if (half) Object.assign(b.style, vertical
+        ? { height: 'calc(50% - 1px)', alignSelf: half === 'am' ? 'start' : 'end' }
+        : { width: 'calc(50% - 1px)', justifySelf: half === 'am' ? 'start' : 'end' });
       if (contL) b.classList.add('cont-left');
       if (contR) b.classList.add('cont-right');
       if (e.repeat) b.classList.add('repeat');
+      if (vertical && t - s < 2) b.classList.add('short'); // kurze Balken: Text waagerecht lassen
       b.textContent = (half ? '½ ' : '') + e.label;
       if (showRange) {
         const r = el('span', 'range');
@@ -1068,8 +1104,10 @@
       e.preventDefault();
       const { e: entry, contL, contR } = bar._inst;
       const r = bar.getBoundingClientRect();
-      const edge = Math.min(8, r.width / 4);
-      const mode = !contL && e.clientX - r.left < edge ? 'start' : !contR && r.right - e.clientX < edge ? 'end' : 'move';
+      // Griffe: waagerecht linker/rechter Rand, senkrecht oberer/unterer Rand
+      const [lo, hi, at] = vertical ? [r.top, r.bottom, e.clientY] : [r.left, r.right, e.clientX];
+      const edge = Math.min(8, (hi - lo) / 4);
+      const mode = !contL && at - lo < edge ? 'start' : !contR && hi - at < edge ? 'end' : 'move';
       cal.classList.add('dragging'); // Balken lassen Zeiger durch, damit der Tag darunter gefunden wird
       const startDate = dayAt(e.clientX, e.clientY)?.dataset.date || bar._inst.from;
       barDrag = { entry, mode, startDate, orig: { from: entry.from, to: entry.to, half: entry.half },
@@ -1445,6 +1483,7 @@
   document.addEventListener('keydown', e => {
     if (document.querySelector('dialog[open]')) return; // Eingabefelder gibt es nur in Dialogen
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'o') { toggleOrient(); return; }
     if (e.key === 'ArrowLeft') step(-1);
     else if (e.key === 'ArrowRight') step(1);
     else if (!e.ctrlKey && !e.metaKey && !e.altKey && KEYS[e.key]) setView(KEYS[e.key]);
@@ -1488,6 +1527,21 @@
     view = idle.view; // ohne Speichern: die gemerkte Ansicht des Nutzers bleibt
     render();
   }, 15e3);
+
+  // Ausrichtung umschalten
+  const orientBtn = document.getElementById('orientBtn');
+  function updateOrientBtn() {
+    orientBtn.textContent = vertical ? '⇄ Waagerecht' : '⇅ Senkrecht';
+    orientBtn.title = vertical ? 'Tage von links nach rechts anzeigen (Taste O)' : 'Tage von oben nach unten anzeigen (Taste O)';
+  }
+  function toggleOrient() {
+    vertical = !vertical;
+    try { localStorage.setItem(ORIENT_KEY, vertical ? 'vertical' : 'horizontal'); } catch (e) { /* egal */ }
+    updateOrientBtn();
+    render();
+  }
+  orientBtn.addEventListener('click', toggleOrient);
+  updateOrientBtn();
 
   // Drucken: immer im hellen Design
   document.getElementById('printBtn').addEventListener('click', () => window.print());
