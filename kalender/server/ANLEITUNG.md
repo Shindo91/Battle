@@ -66,7 +66,16 @@ powershell -ExecutionPolicy Bypass -File C:\Kalender-Update\vom-pc-aktualisieren
    (Sicherung nach `daten\backup\code-<Datum>`, Austausch, ggf. Server-Neustart).
    Klappt der Fernzugriff nicht, zeigt das Skript den einen Befehl, den du auf dem Server eingibst.
 
-Voraussetzungen: Der PC kommt ins Internet; dein Windows-Konto ist Administrator auf dem Server
+**Kommt PowerShell nicht ins Internet** (eigener DNS, Internet nur über Proxy im Browser), den Stand im
+Browser holen: GitHub → Branch wählen → grüner Button **Code → Download ZIP**, dann:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File C:\Kalender-Update\vom-pc-aktualisieren.ps1 -Server GASWP003010 -Zip "$env:USERPROFILE\Downloads\Battle-claude-nifty-curie-guwnkh.zip"
+```
+
+(Alternativ den Proxy angeben: `-Proxy http://proxy.firma.local:8080`.)
+
+Voraussetzungen: Dein Windows-Konto ist Administrator auf dem Server
 (sonst `-Credential (Get-Credential DOMÄNE\admin)` anhängen). Weitere Optionen: `-Version <Commit>`,
 `-Pfad D:\Kalender`, `-Ja` (ohne Rückfrage).
 
