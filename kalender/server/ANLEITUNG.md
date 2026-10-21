@@ -93,7 +93,9 @@ und der Monitor selbst nach.
 
 ## 3. Kalender einrichten (im Browser als admin)
 
-1. **Einstellungen** → Personen benennen/anlegen, **Gruppen** bilden, Kategorien, Bundesland für Feiertage.
+1. **Einstellungen** → Personen benennen/anlegen, **Gruppen** bilden, Kategorien, Bundesland für Feiertage,
+   **Schulferien** (iCal-Datei `.ics` des Bundeslands importieren oder von Hand eintragen). Jeder Benutzer blendet
+   sie oben mit **🏖 Ferien** für sich ein. Jeder Benutzer kann außerdem **eigene Gruppen** anlegen, die nur er sieht.
    (Gruppen dienen nur der Auswahl; die Rechte gelten weiterhin je Person. Benutzer sehen in einer Gruppe
    nur die Mitglieder, für die sie freigegeben sind.)
 2. Vorhandene Einträge aus der Einzelplatz-Version übernehmen: dort *Einstellungen → Exportieren*,
@@ -102,6 +104,10 @@ und der Monitor selbst nach.
    - **Benutzer** anlegen (Name + Start-Passwort). Beim ersten Anmelden muss jeder sein eigenes Passwort setzen.
    - Je Person festlegen: **–** (nicht sichtbar), **sehen** oder **bearbeiten**.
    - **Administrator**: sieht und bearbeitet alles und verwaltet Benutzer.
+   - **Gruppen-Admin**: Der Admin ordnet ihm in der Benutzerliste Gruppen zu („verwaltet: …“). Er sieht und
+     bearbeitet alle Personen dieser Gruppen, legt dort über *Einstellungen → Meine Gruppen verwalten* neue
+     Personen an (umbenennen, Farbe, aus der Gruppe nehmen), vergibt anderen Benutzern Rechte für diese
+     Personen und legt selbst Benutzer/Anzeigen an (Passwort zurücksetzen/Löschen nur bei selbst angelegten).
    - **Anzeige (Monitor)** anlegen, Personen auf „sehen“ stellen und den **Link** kopieren.
    - **Passwort zurücksetzen**: neues Start-Passwort vergeben – der Benutzer muss es beim nächsten
      Anmelden ändern, bestehende Anmeldungen werden beendet.

@@ -114,6 +114,10 @@ Keine Installation, kein Server.
   aus, welche Gruppen/Personen angezeigt werden („nur diese“ zeigt genau eine Gruppe/Person); im
   Eintrags-Dialog wählt ein Klick auf eine Gruppe alle Mitglieder aus.
 - **Feiertage ein/aus**: jeder Benutzer kann sie in den Einstellungen für sich ausblenden.
+- **Schulferien**: der Admin importiert sie als iCal-Datei (oder trägt sie ein); jeder blendet sie mit **🏖 Ferien** ein.
+- **Eigene Gruppen**: jeder Benutzer kann Gruppen anlegen, die nur er sieht.
+- **Gruppen-Admin**: verwaltet die ihm zugeordneten Gruppen – Personen anlegen/ändern, Einträge bearbeiten,
+  Benutzer anlegen und ihnen Rechte für diese Personen geben.
 - **Ausrichtung**: Button *⇅ Senkrecht* / *⇄ Waagerecht* (oder Taste `O`) – Tage laufen wahlweise von links nach
   rechts oder von oben nach unten (Monate bzw. Personen dann als Spalten). Wird pro Browser gemerkt.
 - **Hell/Dunkel**: Button in der Kopfzeile schaltet zwischen *Auto* (wie System), *Hell* und *Dunkel*.

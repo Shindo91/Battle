@@ -20,6 +20,9 @@
     --hover: #dbeafe;
     --sel: #93c5fd;
     --warn: #f59e0b;
+    --school: #14b8a6;
+    --school-tint: rgba(20, 184, 166, .13);
+    --school-text: #0f766e;
     --warn-bg: #fde68a;
     --warn-text: #78350f;
     --wd-bg: #fafbfc;
@@ -35,7 +38,7 @@
     :root:not([data-theme="light"]) {
       --bg: #1e2024; --panel: #2a2d32; --text: #eef0f3; --muted: #aab1bc; --line: #3b3f46;
       --weekend: #232529; --holiday: #3b2a30; --holiday-text: #f5a6b6; --today: #f0506e; --accent: #6ea8fe;
-      --strong-line: #5a5f68; --hover: #343f55; --sel: #3e5b8c; --warn: #f5b942; --warn-bg: #4a3c14; --warn-text: #fcd98a; --wd-bg: #33363c; --invalid-a: #24262a; --invalid-b: #2b2e33;
+      --strong-line: #5a5f68; --hover: #343f55; --sel: #3e5b8c; --warn: #f5b942; --warn-bg: #4a3c14; --warn-text: #fcd98a; --school: #2dd4bf; --school-tint: rgba(45, 212, 191, .12); --school-text: #5eead4; --wd-bg: #33363c; --invalid-a: #24262a; --invalid-b: #2b2e33;
       --input-border: #4b5058; --danger: #f4a3a3; --danger-border: #a33a3a;
       color-scheme: dark;
     }
@@ -43,7 +46,7 @@
   :root[data-theme="dark"] {
     --bg: #1e2024; --panel: #2a2d32; --text: #eef0f3; --muted: #aab1bc; --line: #3b3f46;
     --weekend: #232529; --holiday: #3b2a30; --holiday-text: #f5a6b6; --today: #f0506e; --accent: #6ea8fe;
-    --strong-line: #5a5f68; --hover: #343f55; --sel: #3e5b8c; --warn: #f5b942; --warn-bg: #4a3c14; --warn-text: #fcd98a; --wd-bg: #33363c; --invalid-a: #24262a; --invalid-b: #2b2e33;
+    --strong-line: #5a5f68; --hover: #343f55; --sel: #3e5b8c; --warn: #f5b942; --warn-bg: #4a3c14; --warn-text: #fcd98a; --school: #2dd4bf; --school-tint: rgba(45, 212, 191, .12); --school-text: #5eead4; --wd-bg: #33363c; --invalid-a: #24262a; --invalid-b: #2b2e33;
     --input-border: #4b5058; --danger: #f4a3a3; --danger-border: #a33a3a;
     color-scheme: dark;
   }
@@ -279,6 +282,11 @@
   .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
   .actions .left { margin-right: auto; }
   .err { color: var(--danger); font-size: .9rem; min-height: 1.2em; }
+  .school-list { max-height: 220px; overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+  .school-row { display: flex; gap: 6px; align-items: center; }
+  .school-row input[type=text] { flex: 1; min-width: 6em; }
+  .school-row input[type=date] { width: 9.5em; }
+  .school-row button { padding: 3px 8px; }
   label.check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
   .group-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
   .group-row .gmain { flex: 1; display: flex; flex-direction: column; gap: 6px; }
@@ -289,6 +297,10 @@
   .settings-person input[type=text] { flex: 1; }
   .settings-person label { display: inline-flex; align-items: center; gap: 4px; font-size: .85rem; color: var(--muted); white-space: nowrap; cursor: pointer; }
   .settings-person button { padding: 4px 9px; }
+  /* Schmalere Bildschirme: Neben-Buttons nur mit Symbol (Text steht im Tooltip) */
+  @media (max-width: 1800px) {
+    header button .txt { display: none; }
+  }
   @media (max-width: 1500px) {
     header { gap: 8px; padding: 6px 10px; }
     header h1 { font-size: 1.3rem; }
@@ -330,7 +342,15 @@
   #usersTable td.acts button { padding: 3px 8px; font-size: .85rem; }
   #usersTable .muted { color: var(--muted); }
   #usersTable input.link { width: 11em; padding: 3px 6px; font-size: .8rem; }
-  #usersMsg { min-height: 1.3em; }
+  #usersMsg, #teamMsg { min-height: 1.3em; }
+  #teamMsg.err { color: var(--danger); }
+  .team-group { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+  .team-group h3 { margin: 0 0 8px; font-size: 1.05rem; }
+  .team-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .team-row input[type=text] { flex: 1; }
+  .team-row button { padding: 4px 10px; }
+  .agroups { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 4px; font-size: .85rem; }
+  .agroups label { display: inline-flex; gap: 4px; align-items: center; cursor: pointer; }
   #usersMsg.err { color: var(--danger); }
   .offline { background: var(--warn-bg); color: var(--warn-text); padding: 2px 10px; border-radius: 4px; font-weight: 700; white-space: nowrap; }
   .empty-note { grid-column: 1 / -1; grid-row: 1 / -1; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 1.2rem; padding: 2em; text-align: center; }
@@ -355,6 +375,12 @@
 
   /* Alle abwesend */
   .wd.allaway { box-shadow: inset 0 -4px 0 var(--warn); }
+  /* Schulferien: türkiser Streifen oben in der Datumszeile, zarte Tönung der Tage */
+  .wd.school { box-shadow: inset 0 3px 0 var(--school); }
+  .wd.school.allaway { box-shadow: inset 0 3px 0 var(--school), inset 0 -4px 0 var(--warn); }
+  .day.school { background-image: linear-gradient(var(--school-tint), var(--school-tint)); }
+  .wd .sname { color: var(--school-text); }
+  #schoolBtn.active { background: var(--school); border-color: var(--school); color: #06201d; font-weight: 600; }
   .wd.allaway:not(.today):not(.holiday) { background: var(--warn-bg); color: var(--warn-text); }
 
   /* Balken: Ränder zum Ziehen, Serien */
@@ -419,7 +445,8 @@
   </div>
   <div class="spacer"></div>
   <button class="primary" id="addBtn">+ Eintrag</button>
-  <button id="settingsBtn">Einstellungen</button>
+  <button id="settingsBtn" title="Einstellungen"><span class="ico">⚙</span><span class="txt"> Einstellungen</span></button>
+  <button id="schoolBtn" type="button"><span class="ico">🏖</span><span class="txt"> Ferien</span></button>
   <button id="orientBtn"></button>
   <button id="printBtn" title="Aktuelle Ansicht drucken / als PDF speichern" aria-label="Drucken">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -504,6 +531,17 @@
   <div class="actions"><button type="button" id="usersCloseBtn">Schließen</button></div>
 </dialog>
 
+<!-- Gruppen-Admin: eigene Gruppen pflegen -->
+<dialog id="teamDialog" class="wide">
+  <h2>Meine Gruppen verwalten</h2>
+  <p class="hint">Hier legst du in deinen Gruppen neue Personen an, benennst sie um, änderst ihre Farbe oder nimmst sie
+    aus der Gruppe. Änderungen werden sofort gespeichert. Wer die Personen sehen oder bearbeiten darf, stellst du unter
+    „Benutzer verwalten“ ein.</p>
+  <div id="teamBody"></div>
+  <div class="hint" id="teamMsg"></div>
+  <div class="actions"><button type="button" id="teamCloseBtn">Schließen</button></div>
+</dialog>
+
 <div id="toast" hidden><span></span><button type="button">Rückgängig</button></div>
 
 <!-- Eintrag anlegen / bearbeiten -->
@@ -581,6 +619,7 @@
       <div class="btnrow">
         <button type="button" id="sPwBtn">Passwort ändern</button>
         <button type="button" id="sUsersBtn">Benutzer verwalten</button>
+        <button type="button" id="sTeamBtn">Meine Gruppen verwalten</button>
         <button type="button" id="sLogoutBtn">Abmelden</button>
       </div>
     </div>
@@ -599,6 +638,11 @@
       <div id="sCats"></div>
       <div><button type="button" id="sAddCat">+ Kategorie hinzufügen</button></div>
     </div>
+    <div class="row" id="sMyGroupsRow">
+      <span class="cap">Meine Gruppen (nur für dich sichtbar – zum schnellen Auswählen oben und beim Eintragen)</span>
+      <div id="sMyGroups"></div>
+      <div><button type="button" id="sAddMyGroup">+ Eigene Gruppe</button></div>
+    </div>
     <div class="row">
       <span class="cap">Persönliche Anzeige (nur für dich in diesem Browser)</span>
       <label class="check"><input type="checkbox" id="sHolidays"> Feiertage anzeigen</label>
@@ -615,6 +659,18 @@
     <div class="row admin-only">
       <label class="cap" for="sRegion">Feiertage</label>
       <select id="sRegion"></select>
+    </div>
+    <div class="row admin-only">
+      <span class="cap">Schulferien (jeder Benutzer blendet sie oben mit „🏖 Ferien“ ein)</span>
+      <p class="hint">Am einfachsten: iCal-Datei (.ics) der Schulferien eures Bundeslands z. B. vom Kultusministerium
+        oder einer Ferienseite herunterladen und hier importieren. Einzelne Ferien lassen sich auch von Hand eintragen.</p>
+      <div id="sSchool" class="school-list"></div>
+      <div class="btnrow">
+        <button type="button" id="sAddSchool">+ Ferien</button>
+        <button type="button" id="sImportSchool">iCal (.ics) importieren</button>
+        <button type="button" id="sClearSchool" class="danger">Alle entfernen</button>
+        <input type="file" id="sSchoolFile" accept=".ics,text/calendar" hidden>
+      </div>
     </div>
     <div class="row admin-only">
       <span class="cap">Daten sichern / übertragen</span>
@@ -664,6 +720,8 @@
   function normalize(s) {
     if (!Array.isArray(s.categories)) s.categories = clone(DEFAULT_CATEGORIES);
     if (!Array.isArray(s.groups)) s.groups = [];
+    if (!Array.isArray(s.myGroups)) s.myGroups = [];
+    if (!Array.isArray(s.schoolHolidays)) s.schoolHolidays = [];
     return s;
   }
 
@@ -714,6 +772,7 @@
   // Rechte (ohne Server: alles erlaubt)
   const isDisplay = () => SERVER && me?.role === 'display';
   const isAdmin = () => !SERVER || me?.role === 'admin';
+  const isGroupAdmin = () => SERVER && me?.role === 'groupadmin';
   const canEditPerson = id => !SERVER || (!isDisplay() && !!state.persons.find(p => p.id === id)?.canEdit);
   const canEditEntry = e => !isDisplay() && !e._ro && e.persons.every(canEditPerson);
 
@@ -724,9 +783,11 @@
   const writePref = (k, v) => { try { localStorage.setItem(prefKey(k), JSON.stringify(v)); } catch (e) { /* egal */ } };
   let hiddenIds = new Set();
   let showHolidays = true;
+  let showSchool = false;   // Schulferien: aus, bis man sie oben einschaltet
   function loadPrefs() {
     hiddenIds = new Set(readPref('hidden', []));
     showHolidays = readPref('holidays', true) !== false;
+    showSchool = readPref('school', false) === true;
   }
   loadPrefs();
   state.persons.forEach(p => { if (p.hidden) { hiddenIds.add(p.id); delete p.hidden; } }); // ältere Speicherstände
@@ -867,6 +928,18 @@
     return holidayCache.get(y).get(date) || '';
   }
 
+  // ---------- Schulferien ----------
+  // Liefert für einen Zeitraum: Datum → Name der Schulferien (nur wenn eingeschaltet)
+  function schoolMap(rf, rt) {
+    const m = new Map();
+    if (!showSchool) return m;
+    state.schoolHolidays.forEach(h => {
+      if (h.to < rf || h.from > rt) return;
+      for (let d = h.from < rf ? rf : h.from, end = h.to > rt ? rt : h.to; d <= end; d = shiftIso(d, 1)) m.set(d, h.name);
+    });
+    return m;
+  }
+
   // ---------- Rendering ----------
   const cal = document.getElementById('calendar');
 
@@ -940,6 +1013,7 @@
     document.getElementById('yearLabel').textContent = title;
     document.querySelectorAll('#viewSwitch button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
     renderLegend();
+    updateSchoolBtn();
     cal.replaceChildren();
     cal.className = 'view-' + view + (vertical ? ' vertical' : '');
     const today = todayIso();
@@ -958,6 +1032,7 @@
     const allDays = bands.flatMap(b => b.days).filter(Boolean);
     const insts = instances(allDays[0], allDays[allDays.length - 1]);
     const away = allAwayDays(insts, allDays[0], allDays[allDays.length - 1]);
+    const school = schoolMap(allDays[0], allDays[allDays.length - 1]);
 
     // Waagerecht: pro Band eine Zeile mit Wochentag + Datum, darunter eine Zeile je sichtbarer Person,
     // Tage laufen nach rechts. Senkrecht ist alles gespiegelt: Tage laufen nach unten, Bänder/Personen
@@ -998,6 +1073,7 @@
             d.textContent = `${pad(dd)}.${pad(mm)}.`;
             w.append(b, d);
             if (hol) { const h = el('span', 'hname'); h.textContent = hol; w.appendChild(h); }
+            else if (school.has(date)) { const h = el('span', 'hname sname'); h.textContent = '🏖 ' + school.get(date); w.appendChild(h); }
           } else {
             const dt = el('span', 'dt'), mo = el('span', 'mo');
             mo.textContent = `${pad(mm)}.`;
@@ -1005,8 +1081,10 @@
             w.append(WEEKDAYS[wd], dt);
           }
           w.title = `${WEEKDAYS[wd]}, ${fmt(date)}${hol ? ' – ' + hol : ''}` +
+            `${school.has(date) ? '\n🏖 ' + school.get(date) : ''}` +
             `${away.has(date) ? '\n⚠ Alle Personen abwesend' : ''}${view === 'week' ? '' : '\n(Klick: Wochenansicht)'}`;
           if (away.has(date)) w.classList.add('allaway');
+          if (school.has(date)) w.classList.add('school');
           if (wd === 0 || wd === 6) w.classList.add('weekend');
           if (hol) w.classList.add('holiday');
           if (date === today) w.classList.add('today');
@@ -1034,6 +1112,7 @@
             if (wd === 0 || wd === 6) c.classList.add('weekend');
             const hol = holidayName(date);
             if (hol) { c.classList.add('holiday'); c.title = hol; }
+            if (school.has(date)) { c.classList.add('school'); c.title = (c.title ? c.title + '\n' : '') + '🏖 ' + school.get(date); }
             if (date === today) c.classList.add('today');
             c.dataset.date = date;
             c.dataset.person = p.id;
@@ -1090,6 +1169,8 @@
     });
     const hol = holidayName(today);
     if (hol) nowList.unshift(item('var(--holiday-text)', `<b>Feiertag</b> ${esc(hol)}`));
+    const schoolNow = showSchool && state.schoolHolidays.find(h => h.from <= today && h.to >= today);
+    if (schoolNow) nowList.unshift(item('var(--school)', `<b>🏖 ${esc(schoolNow.name)}</b> <small>(bis ${weekdayOf(schoolNow.to)} ${fmtShort(schoolNow.to)})</small>`));
     todayEl.replaceChildren(Object.assign(el('span', 'lbl'), { textContent: 'Heute' }),
       ...(nowList.length ? nowList : [Object.assign(el('span', 'none'), { textContent: 'keine Einträge' })]));
 
@@ -1108,6 +1189,8 @@
       const h = holidayName(d);
       if (h) upcoming.push({ d, node: item('var(--holiday-text)', `${weekdayOf(d)} ${fmtShort(d)} <b>Feiertag</b> ${esc(h)}`) });
     }
+    if (showSchool) state.schoolHolidays.filter(h => h.from > today && h.from <= shiftIso(today, 14)).forEach(h =>
+      upcoming.push({ d: h.from, node: item('var(--school)', `${weekdayOf(h.from)} ${fmtShort(h.from)} <b>🏖 ${esc(h.name)}</b> <small>bis ${fmtShort(h.to)}</small>`) }));
     upcoming.sort((a, b) => a.d.localeCompare(b.d)).slice(0, 8).forEach(u => next.push(u.node));
     nextEl.replaceChildren(Object.assign(el('span', 'lbl'), { textContent: 'Demnächst' }),
       ...(next.length ? next : [Object.assign(el('span', 'none'), { textContent: 'nichts in den nächsten 14 Tagen' })]));
@@ -1222,7 +1305,9 @@
     saveHidden();
     render();
   }
-  const groupsOf = () => state.groups.filter(g => g.members.some(id => personById(id)));
+  // Gemeinsame Gruppen + eigene (persönliche) Gruppen, jeweils mit mindestens einer sichtbaren Person
+  const groupsOf = () => [...state.groups, ...state.myGroups.map(g => ({ ...g, personal: true }))]
+    .filter(g => g.members.some(id => personById(id)));
   function renderLegend() {
     const vis = visiblePersons().map(p => p.id);
     const all = state.persons.length;
@@ -1260,7 +1345,7 @@
       groups.forEach(gr => {
         const m = gr.members.filter(id => personById(id));
         const on = m.filter(id => vis.includes(id)).length;
-        row(`${gr.name} (${m.length})`, null, on === m.length ? true : on ? null : false,
+        row(`${gr.name}${gr.personal ? ' (meine)' : ''} (${m.length})`, null, on === m.length ? true : on ? null : false,
           () => setVisible(on === m.length ? vis.filter(id => !m.includes(id)) : [...new Set([...vis, ...m])]),
           () => setVisible(m));
       });
@@ -1554,7 +1639,7 @@
       const b = el('button');
       b.type = 'button';
       b.title = 'Alle Mitglieder der Gruppe auswählen';
-      b.append(Object.assign(el('span'), { textContent: '👥' }), gr.name);
+      b.append(Object.assign(el('span'), { textContent: gr.personal ? '⭐' : '👥' }), gr.name);
       b.dataset.ids = ids.join(' ');
       b.addEventListener('click', () => {
         const mine = boxes().filter(c => ids.includes(c.value));
@@ -1734,6 +1819,109 @@
   });
   const sHolidays = document.getElementById('sHolidays');
 
+  // Schulferien als Arbeitskopie
+  const sSchool = document.getElementById('sSchool');
+  let schoolDraft = [];
+  function renderSchoolDraft() {
+    sSchool.replaceChildren(...(schoolDraft.length ? schoolDraft.map(h => {
+      const row = el('div', 'school-row');
+      const n = Object.assign(el('input'), { type: 'text', value: h.name, maxLength: 40, placeholder: 'z. B. Herbstferien' });
+      n.addEventListener('input', () => { h.name = n.value; });
+      const f = Object.assign(el('input'), { type: 'date', value: h.from });
+      f.addEventListener('change', () => { h.from = f.value; if (h.to < h.from) { h.to = h.from; t.value = h.to; } });
+      const t = Object.assign(el('input'), { type: 'date', value: h.to });
+      t.addEventListener('change', () => { h.to = t.value; });
+      const del = Object.assign(el('button', 'danger'), { type: 'button', textContent: '✕', title: 'Entfernen' });
+      del.addEventListener('click', () => { schoolDraft = schoolDraft.filter(x => x !== h); renderSchoolDraft(); });
+      row.append(n, f, Object.assign(el('span'), { textContent: '–' }), t, del);
+      return row;
+    }) : [Object.assign(el('span', 'hint'), { textContent: 'Noch keine Schulferien hinterlegt.' })]));
+  }
+  document.getElementById('sAddSchool').addEventListener('click', () => {
+    schoolDraft.push({ id: newId('s'), name: '', from: todayIso(), to: todayIso() });
+    renderSchoolDraft();
+    sSchool.lastElementChild.querySelector('input').focus();
+  });
+  document.getElementById('sClearSchool').addEventListener('click', () => {
+    if (schoolDraft.length && confirm('Alle Schulferien entfernen? (Wird erst mit „Speichern“ übernommen.)')) { schoolDraft = []; renderSchoolDraft(); }
+  });
+
+  // iCal-Datei lesen: VEVENT mit DTSTART/DTEND (Ganztags: DTEND ist der Tag danach) und SUMMARY
+  function parseIcs(text) {
+    const lines = text.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '').split(/\r?\n/);
+    const out = [];
+    let ev = null;
+    const toIsoDate = v => { const m = /^(\d{4})(\d{2})(\d{2})/.exec(v || ''); return m ? `${m[1]}-${m[2]}-${m[3]}` : null; };
+    for (const line of lines) {
+      if (line === 'BEGIN:VEVENT') { ev = {}; continue; }
+      if (line === 'END:VEVENT') {
+        if (ev && ev.start) {
+          let to = ev.end || ev.start;
+          // Enddatum ohne Uhrzeit (oder 00:00) zählt nicht mehr dazu
+          if (ev.end && (ev.endIsDate || /T000000/.test(ev.endRaw)) && ev.end > ev.start) to = shiftIso(ev.end, -1);
+          out.push({ id: newId('s'), name: (ev.summary || 'Ferien').slice(0, 40), from: ev.start, to: to < ev.start ? ev.start : to });
+        }
+        ev = null;
+        continue;
+      }
+      if (!ev) continue;
+      const i = line.indexOf(':');
+      if (i < 0) continue;
+      const key = line.slice(0, i).toUpperCase(), val = line.slice(i + 1);
+      const name = key.split(';')[0];
+      if (name === 'DTSTART') ev.start = toIsoDate(val);
+      else if (name === 'DTEND') { ev.end = toIsoDate(val); ev.endRaw = val; ev.endIsDate = /VALUE=DATE(?!-)/.test(key) || /^\d{8}$/.test(val.trim()); }
+      else if (name === 'SUMMARY') ev.summary = val.replace(/\\([,;\\])/g, '$1').replace(/\\n/gi, ' ').trim();
+    }
+    return out;
+  }
+  const sSchoolFile = document.getElementById('sSchoolFile');
+  document.getElementById('sImportSchool').addEventListener('click', () => sSchoolFile.click());
+  sSchoolFile.addEventListener('change', async () => {
+    const file = sSchoolFile.files[0];
+    sSchoolFile.value = '';
+    if (!file) return;
+    const found = parseIcs(await file.text());
+    if (!found.length) { alert('In der Datei wurden keine Termine gefunden. Ist es eine iCal-Datei (.ics)?'); return; }
+    const key = h => `${h.name}|${h.from}|${h.to}`;
+    const have = new Set(schoolDraft.map(key));
+    const add = found.filter(h => !have.has(key(h)));
+    schoolDraft = [...schoolDraft, ...add].sort((a, b) => a.from.localeCompare(b.from));
+    renderSchoolDraft();
+    alert(`${add.length} Ferientermin(e) übernommen` + (found.length > add.length ? ` (${found.length - add.length} waren schon vorhanden)` : '') +
+          '.\nBitte prüfen und mit „Speichern“ übernehmen.');
+  });
+
+  // Persönliche Gruppen (nur im Serverbetrieb; sieht nur der Benutzer selbst)
+  const sMyGroups = document.getElementById('sMyGroups');
+  let myGroupDraft = [];
+  function renderMyGroupDraft() {
+    sMyGroups.replaceChildren(...myGroupDraft.map(g => {
+      const row = el('div', 'group-row');
+      const main = el('div', 'gmain');
+      const n = Object.assign(el('input'), { type: 'text', value: g.name, maxLength: 30, placeholder: 'Name der Gruppe' });
+      n.addEventListener('input', () => { g.name = n.value; });
+      const mem = el('div', 'gmembers');
+      state.persons.forEach(p => {
+        const l = el('label');
+        const cb = Object.assign(el('input'), { type: 'checkbox', checked: g.members.includes(p.id) });
+        cb.addEventListener('change', () => { g.members = cb.checked ? [...g.members, p.id] : g.members.filter(id => id !== p.id); });
+        l.append(cb, el('i', null, { background: p.color }), p.name);
+        mem.append(l);
+      });
+      main.append(n, mem);
+      const del = Object.assign(el('button', 'danger'), { type: 'button', textContent: '✕', title: 'Gruppe entfernen' });
+      del.addEventListener('click', () => { myGroupDraft = myGroupDraft.filter(x => x !== g); renderMyGroupDraft(); });
+      row.append(main, del);
+      return row;
+    }));
+  }
+  document.getElementById('sAddMyGroup').addEventListener('click', () => {
+    myGroupDraft.push({ id: newId('m'), name: '', members: [] });
+    renderMyGroupDraft();
+    sMyGroups.querySelector('.group-row:last-child input[type=text]').focus();
+  });
+
   document.getElementById('sAddPerson').addEventListener('click', () => {
     const used = new Set(draft.map(p => p.color));
     draft.push({ id: newId('p'), name: `Person ${draft.length + 1}`, color: PALETTE.find(c => !used.has(c)) || PALETTE[0] });
@@ -1750,8 +1938,14 @@
     sHolidays.checked = showHolidays;
     document.querySelectorAll('#settingsDialog .admin-only').forEach(x => { x.hidden = !isAdmin(); });
     document.getElementById('sAccount').hidden = !SERVER;
-    document.getElementById('sUsersBtn').hidden = !(SERVER && isAdmin());
-    document.getElementById('sUserName').textContent = me ? `${me.name} (${{ admin: 'Administrator', user: 'Benutzer' }[me.role] || me.role})` : '';
+    document.getElementById('sUsersBtn').hidden = !(SERVER && (isAdmin() || isGroupAdmin()));
+    document.getElementById('sTeamBtn').hidden = !(SERVER && isGroupAdmin());
+    document.getElementById('sUserName').textContent = me ? `${me.name} (${ROLES[me.role] || me.role})` : '';
+    document.getElementById('sMyGroupsRow').hidden = !SERVER;
+    myGroupDraft = clone(state.myGroups);
+    renderMyGroupDraft();
+    schoolDraft = clone(state.schoolHolidays);
+    renderSchoolDraft();
     catDraft = clone(state.categories);
     renderCatDraft();
     sIdleView.value = idle.view;
@@ -1767,7 +1961,19 @@
       writePref('holidays', showHolidays);
       holidayCache.clear();
     }
+    if (SERVER) {
+      // persönliche Gruppen (für jeden Benutzer)
+      const mine = myGroupDraft.map((g, i) => ({ id: g.id, name: g.name.trim() || `Meine Gruppe ${i + 1}`, members: g.members }));
+      if (JSON.stringify(mine) !== JSON.stringify(state.myGroups.map(({ id, name, members }) => ({ id, name, members })))) {
+        try { await api('PUT', '/api/mygroups', { groups: mine }); }
+        catch (e) { showToast('Meine Gruppen nicht gespeichert: ' + e.message); }
+        if (!isAdmin()) await reloadData().catch(() => {});
+      }
+    }
     if (!isAdmin()) { render(); showToast('Einstellungen gespeichert'); return; }
+    const schoolHolidays = schoolDraft
+      .filter(h => h.from && h.to)
+      .map(h => ({ id: h.id, name: h.name.trim() || 'Ferien', from: h.from, to: h.to < h.from ? h.from : h.to }));
 
     const ids = new Set(draft.map(p => p.id));
     const removed = state.persons.filter(p => !ids.has(p.id));
@@ -1789,7 +1995,7 @@
 
     if (SERVER) {
       try {
-        await api('PUT', '/api/settings', { persons, categories: catDraft, groups, holidayRegion: sRegion.value });
+        await api('PUT', '/api/settings', { persons, categories: catDraft, groups, schoolHolidays, holidayRegion: sRegion.value });
         await reloadData();
         showToast('Einstellungen gespeichert');
       } catch (e) { showToast('Nicht gespeichert: ' + e.message); }
@@ -1810,6 +2016,7 @@
     });
     state.persons = persons;
     state.groups = groups;
+    state.schoolHolidays = schoolHolidays;
     state.categories = catDraft;
     state.holidayRegion = sRegion.value;
     holidayCache.clear();
@@ -1888,7 +2095,10 @@
   function applyTheme() {
     if (theme === 'auto') delete document.documentElement.dataset.theme;
     else document.documentElement.dataset.theme = theme;
-    [themeBtn.textContent, themeBtn.title] = THEMES[theme];
+    const [label, title] = THEMES[theme];
+    const [ico, txt] = label === 'Auto' ? ['A', ' Auto'] : [label.slice(0, 1), label.slice(1)];
+    themeBtn.replaceChildren(Object.assign(el('span', 'ico'), { textContent: ico }), Object.assign(el('span', 'txt'), { textContent: txt }));
+    themeBtn.title = title;
   }
   themeBtn.addEventListener('click', () => {
     theme = { auto: 'light', light: 'dark', dark: 'auto' }[theme];
@@ -1916,10 +2126,30 @@
     render();
   }, 15e3);
 
+  // Schulferien ein-/ausblenden (je Benutzer)
+  const schoolBtn = document.getElementById('schoolBtn');
+  function updateSchoolBtn() {
+    schoolBtn.classList.toggle('active', showSchool);
+    schoolBtn.title = !state.schoolHolidays.length
+      ? 'Es sind noch keine Schulferien hinterlegt (Administrator: Einstellungen → Schulferien)'
+      : showSchool ? 'Schulferien ausblenden' : 'Schulferien einblenden';
+  }
+  schoolBtn.addEventListener('click', () => {
+    if (!state.schoolHolidays.length) {
+      showToast(isAdmin() ? 'Noch keine Schulferien hinterlegt – Einstellungen → Schulferien → iCal importieren.'
+                          : 'Noch keine Schulferien hinterlegt – bitte beim Administrator nachfragen.');
+      return;
+    }
+    showSchool = !showSchool;
+    writePref('school', showSchool);
+    render();
+  });
+
   // Ausrichtung umschalten
   const orientBtn = document.getElementById('orientBtn');
   function updateOrientBtn() {
-    orientBtn.textContent = vertical ? '⇄ Waagerecht' : '⇅ Senkrecht';
+    orientBtn.replaceChildren(Object.assign(el('span', 'ico'), { textContent: vertical ? '⇄' : '⇅' }),
+      Object.assign(el('span', 'txt'), { textContent: vertical ? ' Waagerecht' : ' Senkrecht' }));
     orientBtn.title = vertical ? 'Tage von links nach rechts anzeigen (Taste O)' : 'Tage von oben nach unten anzeigen (Taste O)';
   }
   function toggleOrient() {
@@ -1965,7 +2195,8 @@
 
   // ---------- Server: Daten laden und aktuell halten ----------
   function applyData(d) {
-    state = normalize({ persons: d.persons, categories: d.categories, groups: d.groups, entries: d.entries, holidayRegion: d.holidayRegion });
+    state = normalize({ persons: d.persons, categories: d.categories, groups: d.groups, myGroups: d.myGroups,
+                        schoolHolidays: d.schoolHolidays, entries: d.entries, holidayRegion: d.holidayRegion });
     dataVersion = d.version;
     appVersion = appVersion || d.app;
     holidayCache.clear();
@@ -2076,7 +2307,7 @@
   const uDlg = document.getElementById('usersDialog');
   const usersMsg = document.getElementById('usersMsg');
   let users = [];
-  const ROLES = { admin: 'Administrator', user: 'Benutzer', display: 'Anzeige (Monitor)' };
+  const ROLES = { admin: 'Administrator', groupadmin: 'Gruppen-Admin', user: 'Benutzer', display: 'Anzeige (Monitor)' };
   function uMsg(text, isErr) { usersMsg.textContent = text; usersMsg.classList.toggle('err', !!isErr); }
   const displayLink = u => `${location.origin}${location.pathname}?key=${u.key}`;
   // Kopieren funktioniert auch ohne HTTPS (dort fehlt die Zwischenablage-API)
@@ -2090,10 +2321,14 @@
   }
   async function loadUsers() { users = (await api('GET', '/api/users')).users; renderUsers(); }
 
+  // Personen, für die der angemeldete Benutzer Rechte vergeben darf (Admin: alle; Gruppen-Admin: seine Gruppen)
+  const managedPersons = () => isAdmin() ? state.persons
+    : state.persons.filter(p => state.groups.some(g => g.managed && g.members.includes(p.id)));
   function renderUsers() {
     const t = document.getElementById('usersTable');
     const head = el('tr');
-    ['Name', 'Rolle', ...state.persons.map(p => p.name), ''].forEach(h => head.appendChild(Object.assign(el('th'), { textContent: h })));
+    const cols = managedPersons();
+    ['Name', 'Rolle', ...cols.map(p => p.name), ''].forEach(h => head.appendChild(Object.assign(el('th'), { textContent: h })));
     const rows = users.map(u => {
       const tr = el('tr');
       const name = el('td');
@@ -2101,16 +2336,30 @@
       if (u.id === me.id) name.append(' (du)');
       if (u.mustChange) name.append(Object.assign(el('div', 'muted'), { textContent: 'muss Passwort ändern' }));
       const role = el('td');
-      if (u.role === 'display' || u.id === me.id) role.textContent = ROLES[u.role];
+      if (u.role === 'display' || u.id === me.id || !isAdmin()) role.textContent = ROLES[u.role];
       else {
         const sel = el('select');
-        ['user', 'admin'].forEach(r => sel.appendChild(Object.assign(el('option'), { value: r, textContent: ROLES[r] })));
+        ['user', 'groupadmin', 'admin'].forEach(r => sel.appendChild(Object.assign(el('option'), { value: r, textContent: ROLES[r] })));
         sel.value = u.role;
-        sel.addEventListener('change', () => saveUser(u, { role: sel.value }));
+        sel.addEventListener('change', () => saveUser(u, { role: sel.value, adminGroups: u.adminGroups || [] }));
         role.appendChild(sel);
       }
+      // Admin legt fest, welche Gruppen ein Gruppen-Admin verwaltet
+      if (isAdmin() && u.role === 'groupadmin') {
+        const box = el('div', 'agroups');
+        box.append(Object.assign(el('span', 'muted'), { textContent: 'verwaltet:' }));
+        if (!state.groups.length) box.append(Object.assign(el('span', 'muted'), { textContent: 'erst Gruppen anlegen (Einstellungen)' }));
+        state.groups.forEach(g => {
+          const l = el('label');
+          const cb = Object.assign(el('input'), { type: 'checkbox', checked: (u.adminGroups || []).includes(g.id) });
+          cb.addEventListener('change', () => saveUser(u, { adminGroups: cb.checked ? [...(u.adminGroups || []), g.id] : (u.adminGroups || []).filter(x => x !== g.id) }));
+          l.append(cb, g.name);
+          box.append(l);
+        });
+        role.append(box);
+      }
       tr.append(name, role);
-      state.persons.forEach(p => {
+      cols.forEach(p => {
         const td = el('td');
         if (u.role === 'admin') td.append(Object.assign(el('span', 'muted'), { textContent: 'alles' }));
         else {
@@ -2129,7 +2378,9 @@
       });
       const acts = el('td', 'acts');
       const btn = (label, fn, cls) => { const b = el('button', cls || ''); b.type = 'button'; b.textContent = label; b.addEventListener('click', fn); acts.appendChild(b); return b; };
-      if (u.role === 'display') {
+      if (!u.managed) {
+        acts.append(Object.assign(el('span', 'muted'), { textContent: 'nur Rechte änderbar', title: 'Passwort und Löschen nur für selbst angelegte Zugänge' }));
+      } else if (u.role === 'display') {
         const link = Object.assign(el('input', 'link'), { type: 'text', readOnly: true, value: displayLink(u), title: 'Diesen Link im ThinPro-Browser (Kiosk) eintragen' });
         link.addEventListener('focus', () => link.select());
         acts.appendChild(link);
@@ -2147,7 +2398,7 @@
           catch (e) { uMsg(e.message, true); }
         });
       }
-      const del = btn('Löschen', async () => {
+      const del = !u.managed ? el('button') : btn('Löschen', async () => {
         if (!confirm(`Zugang „${u.name}“ wirklich löschen?`)) return;
         try { await api('DELETE', `/api/users/${u.id}`); uMsg(`„${u.name}“ gelöscht.`); await loadUsers(); }
         catch (e) { uMsg(e.message, true); }
@@ -2160,7 +2411,8 @@
   }
   async function saveUser(u, changes) {
     try {
-      Object.assign(u, (await api('PUT', `/api/users/${u.id}`, { perms: u.perms, ...changes })).user);
+      Object.assign(u, (await api('PUT', `/api/users/${u.id}`, { perms: u.perms, adminGroups: u.adminGroups, ...changes })).user);
+      if (u.role !== 'groupadmin') delete u.adminGroups;
       uMsg(`„${u.name}“ gespeichert.`);
       if (u.id === me.id && changes.role) { location.reload(); return; }
     } catch (e) {
@@ -2170,6 +2422,11 @@
     renderUsers();
   }
   const nuRole = document.getElementById('nuRole'), nuPw = document.getElementById('nuPw'), nuName = document.getElementById('nuName');
+  function fillRoleOptions() {
+    const roles = isAdmin() ? ['user', 'groupadmin', 'admin', 'display'] : ['user', 'display'];
+    nuRole.replaceChildren(...roles.map(r => Object.assign(el('option'), { value: r, textContent: ROLES[r] })));
+    nuPw.hidden = false;
+  }
   nuRole.addEventListener('change', () => { nuPw.hidden = nuRole.value === 'display'; });
   document.getElementById('newUserForm').addEventListener('submit', async ev => {
     ev.preventDefault();
@@ -2185,9 +2442,66 @@
   document.getElementById('sUsersBtn').addEventListener('click', async () => {
     sDlg.close();
     uMsg('');
+    fillRoleOptions();
+    document.querySelector('#usersDialog .hint').textContent = isAdmin()
+      ? 'Rechte je Person: – nicht sichtbar · sehen · bearbeiten. Administratoren sehen und bearbeiten alles. Gruppen-Admins ' +
+        'bearbeiten die Personen der ihnen zugeordneten Gruppen und verwalten dafür Benutzer. Anzeige-Zugänge (Monitor) ' +
+        'können nur sehen und melden sich über ihren Link an. Änderungen werden sofort gespeichert.'
+      : 'Du vergibst hier Rechte für die Personen deiner Gruppen (– · sehen · bearbeiten). Passwort zurücksetzen und ' +
+        'Löschen geht bei Zugängen, die du selbst angelegt hast. Änderungen werden sofort gespeichert.';
     try { await loadUsers(); uDlg.showModal(); } catch (e) { showToast(e.message); }
   });
   document.getElementById('usersCloseBtn').addEventListener('click', () => uDlg.close());
+
+  // ---------- Gruppen-Admin: Personen in den eigenen Gruppen pflegen ----------
+  const tDlg = document.getElementById('teamDialog');
+  const teamMsg = document.getElementById('teamMsg');
+  function tMsg(text, isErr) { teamMsg.textContent = text; teamMsg.classList.toggle('err', !!isErr); }
+  async function teamAction(fn, okText) {
+    try { await fn(); await reloadData(); tMsg(okText); }
+    catch (e) { tMsg(e.message, true); }
+    renderTeam();
+  }
+  function renderTeam() {
+    const body = document.getElementById('teamBody');
+    const groups = state.groups.filter(g => g.managed);
+    if (!groups.length) { body.replaceChildren(Object.assign(el('p', 'hint'), { textContent: 'Dir sind noch keine Gruppen zugeordnet – bitte beim Administrator nachfragen.' })); return; }
+    body.replaceChildren(...groups.map(g => {
+      const box = el('div', 'team-group');
+      box.append(Object.assign(el('h3'), { textContent: `👥 ${g.name}` }));
+      g.members.map(personById).filter(Boolean).forEach(p => {
+        const row = el('div', 'team-row');
+        const col = Object.assign(el('input'), { type: 'color', value: p.color, title: 'Farbe' });
+        col.addEventListener('change', () => teamAction(() => api('PUT', `/api/persons/${p.id}`, { color: col.value }), `Farbe von „${p.name}“ gespeichert.`));
+        const n = Object.assign(el('input'), { type: 'text', value: p.name, maxLength: 30 });
+        n.addEventListener('change', () => teamAction(() => api('PUT', `/api/persons/${p.id}`, { name: n.value }), `„${n.value}“ gespeichert.`));
+        const rm = Object.assign(el('button', 'danger'), { type: 'button', textContent: 'Aus Gruppe nehmen' });
+        rm.addEventListener('click', () => {
+          if (!confirm(`„${p.name}“ aus „${g.name}“ nehmen?\nDu kannst die Person danach nicht mehr bearbeiten (ihre Einträge bleiben erhalten).`)) return;
+          teamAction(() => api('POST', `/api/groups/${g.id}/remove`, { personId: p.id }), `„${p.name}“ aus der Gruppe genommen.`);
+        });
+        row.append(col, n, rm);
+        box.append(row);
+      });
+      if (!g.members.length) box.append(Object.assign(el('p', 'hint'), { textContent: 'Noch keine Personen in dieser Gruppe.' }));
+      const add = el('form', 'team-row');
+      const used = new Set(state.persons.map(p => p.color));
+      const ncol = Object.assign(el('input'), { type: 'color', value: PALETTE.find(c => !used.has(c)) || PALETTE[0], title: 'Farbe' });
+      const nname = Object.assign(el('input'), { type: 'text', placeholder: 'Name der neuen Person', maxLength: 30 });
+      const nbtn = Object.assign(el('button', 'primary'), { type: 'submit', textContent: '+ Person anlegen' });
+      add.append(ncol, nname, nbtn);
+      add.addEventListener('submit', ev => {
+        ev.preventDefault();
+        if (!nname.value.trim()) { tMsg('Bitte einen Namen eingeben.', true); return; }
+        teamAction(() => api('POST', '/api/persons', { name: nname.value.trim(), color: ncol.value, groupId: g.id }),
+          `„${nname.value.trim()}“ angelegt. Rechte für andere Benutzer unter „Benutzer verwalten“.`);
+      });
+      box.append(add);
+      return box;
+    }));
+  }
+  document.getElementById('sTeamBtn').addEventListener('click', () => { sDlg.close(); tMsg(''); renderTeam(); tDlg.showModal(); });
+  document.getElementById('teamCloseBtn').addEventListener('click', () => tDlg.close());
 
   boot();
 })();

@@ -139,6 +139,7 @@ function Get-CleanText($s, [int]$max) {
 $script:Persons = New-Object System.Collections.ArrayList
 $script:Categories = New-Object System.Collections.ArrayList
 $script:Groups = New-Object System.Collections.ArrayList
+$script:School = New-Object System.Collections.ArrayList   # Schulferien: { id, name, from, to }
 $script:Entries = New-Object System.Collections.ArrayList
 $script:Region = 'DE'
 $script:Version = 1
@@ -242,6 +243,23 @@ function ConvertTo-GroupList($list) {
   return ,$out
 }
 
+# Schulferien (vom Admin gepflegt bzw. aus iCal importiert)
+function ConvertTo-SchoolList($list) {
+  $out = New-Object System.Collections.ArrayList
+  foreach ($h in @($list)) {
+    if ($null -eq $h) { continue }
+    $name = Get-CleanText (Get-Prop $h 'name') 40
+    $from = Get-Prop $h 'from'; $to = Get-Prop $h 'to'
+    if (-not $name -or -not (Test-Date $from) -or -not (Test-Date $to) -or [string]::CompareOrdinal($from, $to) -gt 0) { continue }
+    $id = Get-Prop $h 'id'; if (-not (Test-Id $id)) { $id = 's' + (New-RandomHex 6) }
+    [void]$out.Add([ordered]@{ id = $id; name = $name; from = $from; to = $to })
+  }
+  if ($out.Count -gt 500) { throw (New-HttpError 400 'Höchstens 500 Ferien-Einträge.') }
+  $sorted = New-Object System.Collections.ArrayList
+  foreach ($x in @($out | Sort-Object { $_.from })) { [void]$sorted.Add($x) }
+  return ,$sorted
+}
+
 function Import-CalendarData($data, [ref]$skipped) {
   $script:Persons = ConvertTo-PersonList (Get-Prop $data 'persons')
   $cats = Get-Prop $data 'categories'
@@ -249,6 +267,7 @@ function Import-CalendarData($data, [ref]$skipped) {
   $r = Get-Prop $data 'holidayRegion'
   $script:Region = $(if ($Regions -contains $r) { $r } else { 'DE' })
   $script:Groups = ConvertTo-GroupList (Get-Prop $data 'groups')
+  $script:School = ConvertTo-SchoolList (Get-Prop $data 'schoolHolidays')
   $script:Entries = New-Object System.Collections.ArrayList
   $ids = @{}
   $skip = 0
@@ -272,7 +291,8 @@ function Save-Calendar {
   }
   Write-JsonFile $CalFile ([ordered]@{
     version = $script:Version; holidayRegion = $script:Region
-    persons = $script:Persons; categories = $script:Categories; groups = $script:Groups; entries = $script:Entries
+    persons = $script:Persons; categories = $script:Categories; groups = $script:Groups
+    schoolHolidays = $script:School; entries = $script:Entries
   })
 }
 
@@ -291,6 +311,9 @@ function ConvertTo-UserRecord($u) {
     id = [string](Get-Prop $u 'id'); name = [string](Get-Prop $u 'name'); role = [string](Get-Prop $u 'role')
     salt = Get-Prop $u 'salt'; hash = Get-Prop $u 'hash'; iterations = Get-Prop $u 'iterations'
     mustChange = [bool](Get-Prop $u 'mustChange'); key = Get-Prop $u 'key'; perms = $perms
+    adminGroups = @(@(Get-Prop $u 'adminGroups') | Where-Object { Test-Id $_ })   # nur Gruppen-Admin
+    myGroups = @(@(Get-Prop $u 'myGroups') | Where-Object { $_ })               # persönliche Gruppen
+    createdBy = Get-Prop $u 'createdBy'
   }
 }
 
@@ -304,7 +327,8 @@ function Reset-AdminPassword {
   $admin = Find-UserByName 'admin'
   if (-not $admin) {
     $admin = [ordered]@{ id = 'u' + (New-RandomHex 6); name = 'admin'; role = 'admin'; salt = $null; hash = $null
-                         iterations = $null; mustChange = $true; key = $null; perms = [ordered]@{} }
+                         iterations = $null; mustChange = $true; key = $null; perms = [ordered]@{}
+                         adminGroups = @(); myGroups = @(); createdBy = $null }
     [void]$script:Users.Add($admin)
   }
   $pw = New-RandomPassword
@@ -316,9 +340,18 @@ function Reset-AdminPassword {
   Write-Log "Admin-Passwort neu gesetzt. Siehe $AdminPwFile"
 }
 
+# Personen, die ein Gruppen-Admin verwaltet: alle Mitglieder seiner zugeordneten Gruppen
+function Get-ManagedIds($user) {
+  if ($user.role -ne 'groupadmin') { return @() }
+  $ids = @()
+  foreach ($g in $script:Groups) { if ($user.adminGroups -contains $g.id) { $ids += @($g.members) } }
+  return @($ids | Select-Object -Unique)
+}
+
 # Recht einer Person für einen Benutzer: 'edit' | 'view' | 'none'
 function Get-Perm($user, [string]$personId) {
   if ($user.role -eq 'admin') { return 'edit' }
+  if ($user.role -eq 'groupadmin' -and (Get-ManagedIds $user) -contains $personId) { return 'edit' }
   $v = $user.perms[$personId]
   if ($user.role -eq 'display' -and $v) { return 'view' }
   if ($v) { return $v }
@@ -332,6 +365,7 @@ function Test-CanEditEntry($user, $entry) {
 function Get-PublicUser($u) {
   $o = [ordered]@{ id = $u.id; name = $u.name; role = $u.role; mustChange = [bool]$u.mustChange; perms = $u.perms }
   if ($u.role -eq 'display') { $o.key = $u.key }
+  if ($u.role -eq 'groupadmin') { $o.adminGroups = @($u.adminGroups) }
   return $o
 }
 
@@ -435,28 +469,40 @@ function Get-AppVersion { return [string](Get-Item (Join-Path $WebRoot 'index.ht
 
 # Kalenderdaten, gefiltert auf das, was der Benutzer sehen darf
 function Get-CalendarView($user) {
+  $perm = @{}                                        # Recht je Person nur einmal berechnen
+  foreach ($p in $script:Persons) { $perm[$p.id] = Get-Perm $user $p.id }
   $persons = New-Object System.Collections.ArrayList
   foreach ($p in $script:Persons) {
-    $perm = Get-Perm $user $p.id
-    if ($perm -ne 'none') { [void]$persons.Add([ordered]@{ id = $p.id; name = $p.name; color = $p.color; canEdit = ($perm -eq 'edit') }) }
+    if ($perm[$p.id] -ne 'none') { [void]$persons.Add([ordered]@{ id = $p.id; name = $p.name; color = $p.color; canEdit = ($perm[$p.id] -eq 'edit') }) }
   }
   $entries = New-Object System.Collections.ArrayList
   foreach ($e in $script:Entries) {
-    $vis = @($e.persons | Where-Object { (Get-Perm $user $_) -ne 'none' })
+    $vis = @($e.persons | Where-Object { $perm[$_] -and $perm[$_] -ne 'none' })
     if ($vis.Count -eq 0) { continue }
     $o = [ordered]@{}
     foreach ($k in $e.Keys) { $o[$k] = $e[$k] }
     $o.persons = $vis                                # unsichtbare Personen nicht verraten
-    if (-not (Test-CanEditEntry $user $e)) { $o._ro = $true }
+    if (@($e.persons | Where-Object { $perm[$_] -ne 'edit' }).Count -gt 0) { $o._ro = $true }
     [void]$entries.Add($o)
   }
+  $visible = { param($ids) @(@($ids) | Where-Object { $perm[$_] -and $perm[$_] -ne 'none' }) }
   $groups = New-Object System.Collections.ArrayList
   foreach ($g in $script:Groups) {
-    $m = @($g.members | Where-Object { (Get-Perm $user $_) -ne 'none' })
-    if ($m.Count -gt 0) { [void]$groups.Add([ordered]@{ id = $g.id; name = $g.name; members = $m }) }
+    $m = @(& $visible $g.members)   # @(): auch ein einzelnes Mitglied bleibt eine Liste
+    $managed = $user.role -eq 'admin' -or ($user.role -eq 'groupadmin' -and $user.adminGroups -contains $g.id)
+    # eigene Gruppen sieht der Gruppen-Admin auch leer (um Personen anzulegen)
+    if ($m.Count -gt 0 -or ($managed -and $user.role -eq 'groupadmin')) {
+      [void]$groups.Add([ordered]@{ id = $g.id; name = $g.name; members = $m; managed = [bool]$managed })
+    }
+  }
+  $mine = New-Object System.Collections.ArrayList
+  foreach ($g in @($user.myGroups)) {
+    $m = @(& $visible (Get-Prop $g 'members'))
+    [void]$mine.Add([ordered]@{ id = (Get-Prop $g 'id'); name = (Get-Prop $g 'name'); members = $m })
   }
   return [ordered]@{ version = $script:Version; app = (Get-AppVersion); holidayRegion = $script:Region; persons = $persons
-                     categories = $script:Categories; groups = $groups; entries = $entries }
+                     categories = $script:Categories; groups = $groups; myGroups = $mine
+                     schoolHolidays = $script:School; entries = $entries }
 }
 
 function Find-EntryIndex([string]$id) {
@@ -477,6 +523,38 @@ function Set-UserPerms($u, $perms) {
     }
   }
   $u.perms = $clean
+}
+
+function Assert-UserManager($user) {
+  if ($user.role -ne 'admin' -and $user.role -ne 'groupadmin') { throw (New-HttpError 403 'Keine Berechtigung.') }
+}
+# Darf ein Gruppen-Admin diesen Zugang verwalten (Passwort, Link, Löschen)? Nur selbst angelegte Benutzer/Anzeigen.
+function Test-OwnsUser($user, $target) {
+  return ($user.role -eq 'admin') -or ($target.createdBy -eq $user.id -and ($target.role -eq 'user' -or $target.role -eq 'display'))
+}
+function Set-AdminGroups($u, $ids) {
+  $valid = @($script:Groups | ForEach-Object { $_.id })
+  $u.adminGroups = @(@($ids) | Where-Object { $valid -contains $_ } | Select-Object -Unique)
+}
+# Gruppen-Admin: nur Rechte für seine Personen ändern, alle anderen Rechte des Benutzers bleiben
+function Merge-ManagedPerms($user, $target, $perms) {
+  $managed = Get-ManagedIds $user
+  $tmp = [ordered]@{ role = $target.role; perms = $null }
+  Set-UserPerms $tmp $perms
+  $merged = [ordered]@{}
+  foreach ($k in @($target.perms.Keys)) { if ($managed -notcontains $k) { $merged[$k] = $target.perms[$k] } }
+  foreach ($k in @($tmp.perms.Keys)) { if ($managed -contains $k) { $merged[$k] = $tmp.perms[$k] } }
+  $target.perms = $merged
+}
+function Get-UserForManager($user, $u) {
+  $o = Get-PublicUser $u
+  if ($user.role -eq 'groupadmin') {
+    $managed = Get-ManagedIds $user
+    $p = [ordered]@{}; foreach ($k in @($u.perms.Keys)) { if ($managed -contains $k) { $p[$k] = $u.perms[$k] } }
+    $o.perms = $p
+  }
+  $o.managed = [bool](Test-OwnsUser $user $u)
+  return $o
 }
 
 function Test-UserName([string]$name) { return ($name -match '^[\p{L}\p{N}._ -]{1,30}$') }
@@ -626,6 +704,8 @@ function Invoke-Request($ctx) {
     $script:Categories = $cats
     $script:Region = $region
     $script:Groups = ConvertTo-GroupList (Get-Prop $body 'groups')   # nach den Personen prüfen
+    $script:School = ConvertTo-SchoolList (Get-Prop $body 'schoolHolidays')
+    foreach ($u in $script:Users) { if ($u.role -eq 'groupadmin') { Set-AdminGroups $u $u.adminGroups } }
     Remove-PersonReferences $removed
     Save-Calendar
     Write-Log "Einstellungen geändert von $($user.name)"
@@ -634,8 +714,8 @@ function Invoke-Request($ctx) {
   }
   if ($path -eq '/api/export' -and $method -eq 'GET') {
     Assert-Admin $user
-    Send-Json $ctx 200 ([ordered]@{ holidayRegion = $script:Region; persons = $script:Persons
-                                    categories = $script:Categories; groups = $script:Groups; entries = $script:Entries }) $null
+    Send-Json $ctx 200 ([ordered]@{ holidayRegion = $script:Region; persons = $script:Persons; categories = $script:Categories
+                                    groups = $script:Groups; schoolHolidays = $script:School; entries = $script:Entries }) $null
     return
   }
   if ($path -eq '/api/import' -and $method -eq 'POST') {
@@ -652,22 +732,84 @@ function Invoke-Request($ctx) {
     return
   }
 
-  # ---- Admin: Benutzer
+  # ---- Persönliche Gruppen (sieht nur der Benutzer selbst)
+  if ($path -eq '/api/mygroups' -and $method -eq 'PUT') {
+    Assert-Editor $user
+    $list = ConvertTo-GroupList (Get-Prop (Read-Body $req) 'groups')
+    foreach ($g in $list) { $g.members = @($g.members | Where-Object { (Get-Perm $user $_) -ne 'none' }) }
+    $user.myGroups = @($list)
+    Save-Users
+    $script:Version++   # damit andere geöffnete Fenster desselben Benutzers nachladen
+    Send-Json $ctx 200 @{ ok = $true; version = $script:Version } $null
+    return
+  }
+
+  # ---- Personen anlegen/ändern (Admin, Gruppen-Admin in seinen Gruppen)
+  if ($path -eq '/api/persons' -and $method -eq 'POST') {
+    Assert-UserManager $user
+    $body = Read-Body $req
+    $gid = Get-Prop $body 'groupId'
+    $group = $script:Groups | Where-Object { $_.id -eq $gid } | Select-Object -First 1
+    if ($user.role -eq 'groupadmin' -and (-not $group -or $user.adminGroups -notcontains $gid)) { throw (New-HttpError 403 'Nur in deinen eigenen Gruppen.') }
+    if ($script:Persons.Count -ge 50) { throw (New-HttpError 400 'Höchstens 50 Personen.') }
+    $name = Get-CleanText (Get-Prop $body 'name') 30
+    if (-not $name) { throw (New-HttpError 400 'Bitte einen Namen eingeben.') }
+    $color = Get-Prop $body 'color'; if (-not (Test-Color $color)) { $color = '#2563eb' }
+    $p = [ordered]@{ id = 'p' + (New-RandomHex 6); name = $name; color = $color }
+    [void]$script:Persons.Add($p)
+    if ($group) { $group.members = @($group.members) + $p.id }
+    Save-Calendar
+    Write-Log "Person angelegt: $name (Gruppe $gid) von $($user.name)"
+    Send-Json $ctx 200 @{ person = $p; version = $script:Version } $null
+    return
+  }
+  if ($path -match '^/api/persons/([A-Za-z0-9_-]{1,40})$' -and $method -eq 'PUT') {
+    Assert-UserManager $user
+    $p = $script:Persons | Where-Object { $_.id -eq $Matches[1] } | Select-Object -First 1
+    if (-not $p) { throw (New-HttpError 404 'Person nicht gefunden.') }
+    if ((Get-Perm $user $p.id) -ne 'edit' -or ($user.role -eq 'groupadmin' -and (Get-ManagedIds $user) -notcontains $p.id)) {
+      throw (New-HttpError 403 'Nur Personen deiner Gruppen.')
+    }
+    $body = Read-Body $req
+    $name = Get-CleanText (Get-Prop $body 'name') 30
+    if ($name) { $p.name = $name }
+    $color = Get-Prop $body 'color'; if (Test-Color $color) { $p.color = $color }
+    Save-Calendar
+    Send-Json $ctx 200 @{ person = $p; version = $script:Version } $null
+    return
+  }
+  if ($path -match '^/api/groups/([A-Za-z0-9_-]{1,40})/remove$' -and $method -eq 'POST') {
+    Assert-UserManager $user
+    $gid = $Matches[1]
+    $group = $script:Groups | Where-Object { $_.id -eq $gid } | Select-Object -First 1
+    if (-not $group) { throw (New-HttpError 404 'Gruppe nicht gefunden.') }
+    if ($user.role -eq 'groupadmin' -and $user.adminGroups -notcontains $gid) { throw (New-HttpError 403 'Nur in deinen eigenen Gruppen.') }
+    $pid2 = Get-Prop (Read-Body $req) 'personId'
+    $group.members = @($group.members | Where-Object { $_ -ne $pid2 })
+    Save-Calendar
+    Send-Json $ctx 200 @{ ok = $true; version = $script:Version } $null
+    return
+  }
+
+  # ---- Benutzerverwaltung (Admin; Gruppen-Admin eingeschränkt)
   if ($path -eq '/api/users' -and $method -eq 'GET') {
-    Assert-Admin $user
-    Send-Json $ctx 200 @{ users = @($script:Users | ForEach-Object { Get-PublicUser $_ }) } $null
+    Assert-UserManager $user
+    $list = @($script:Users | Where-Object { $user.role -eq 'admin' -or (($_.role -eq 'user' -or $_.role -eq 'display') -and $_.id -ne $user.id) })
+    Send-Json $ctx 200 @{ users = @($list | ForEach-Object { Get-UserForManager $user $_ }) } $null
     return
   }
   if ($path -eq '/api/users' -and $method -eq 'POST') {
-    Assert-Admin $user
+    Assert-UserManager $user
     $body = Read-Body $req
     $name = Get-CleanText (Get-Prop $body 'name') 30
     if (-not (Test-UserName $name)) { throw (New-HttpError 400 'Benutzername: 1–30 Zeichen (Buchstaben, Ziffern, Punkt, Leerzeichen, - und _).') }
     if (Find-UserByName $name) { throw (New-HttpError 400 'Diesen Benutzernamen gibt es schon.') }
     $role = Get-Prop $body 'role'
-    if (@('admin', 'user', 'display') -notcontains $role) { $role = 'user' }
+    $allowed = $(if ($user.role -eq 'admin') { @('admin', 'groupadmin', 'user', 'display') } else { @('user', 'display') })
+    if ($allowed -notcontains $role) { $role = 'user' }
     $u = [ordered]@{ id = 'u' + (New-RandomHex 6); name = $name; role = $role; salt = $null; hash = $null
-                     iterations = $null; mustChange = $false; key = $null; perms = [ordered]@{} }
+                     iterations = $null; mustChange = $false; key = $null; perms = [ordered]@{}
+                     adminGroups = @(); myGroups = @(); createdBy = $user.id }
     if ($role -eq 'display') {
       $u.key = New-RandomHex 24
     } else {
@@ -676,31 +818,42 @@ function Invoke-Request($ctx) {
       Set-UserPassword $u $pw
       $u.mustChange = $true
     }
-    Set-UserPerms $u (Get-Prop $body 'perms')
+    if ($user.role -eq 'groupadmin') { Merge-ManagedPerms $user $u (Get-Prop $body 'perms') }
+    else { Set-UserPerms $u (Get-Prop $body 'perms') }
+    if ($role -eq 'groupadmin') { Set-AdminGroups $u (Get-Prop $body 'adminGroups') }
     [void]$script:Users.Add($u)
     Save-Users
     Write-Log "Benutzer angelegt: $name ($role) von $($user.name)"
-    Send-Json $ctx 200 @{ user = (Get-PublicUser $u) } $null
+    Send-Json $ctx 200 @{ user = (Get-UserForManager $user $u) } $null
     return
   }
   if ($path -match '^/api/users/([A-Za-z0-9_-]{1,40})(/password|/key)?$') {
-    Assert-Admin $user
+    Assert-UserManager $user
     $target = Find-UserById $Matches[1]
     $action = $Matches[2]
     if (-not $target) { throw (New-HttpError 404 'Benutzer nicht gefunden.') }
+    if ($user.role -eq 'groupadmin' -and (($target.role -ne 'user' -and $target.role -ne 'display') -or $target.id -eq $user.id)) {
+      throw (New-HttpError 403 'Diesen Zugang darfst du nicht ändern.')
+    }
     $body = Read-Body $req
     if (-not $action -and $method -eq 'PUT') {
-      $role = Get-Prop $body 'role'
-      if ($role -and $role -ne $target.role) {
-        if (@('admin', 'user') -notcontains $role -or $target.role -eq 'display') { throw (New-HttpError 400 'Diese Rollenänderung ist nicht möglich.') }
-        if ($target.role -eq 'admin' -and (Get-AdminCount) -le 1) { throw (New-HttpError 400 'Es muss mindestens einen Administrator geben.') }
-        $target.role = $role
+      if ($user.role -eq 'groupadmin') {
+        Merge-ManagedPerms $user $target (Get-Prop $body 'perms')     # nur Rechte für eigene Personen
+      } else {
+        $role = Get-Prop $body 'role'
+        if ($role -and $role -ne $target.role) {
+          if (@('admin', 'groupadmin', 'user') -notcontains $role -or $target.role -eq 'display') { throw (New-HttpError 400 'Diese Rollenänderung ist nicht möglich.') }
+          if ($target.role -eq 'admin' -and (Get-AdminCount) -le 1) { throw (New-HttpError 400 'Es muss mindestens einen Administrator geben.') }
+          $target.role = $role
+        }
+        Set-UserPerms $target (Get-Prop $body 'perms')
+        if ($target.role -eq 'groupadmin') { Set-AdminGroups $target (Get-Prop $body 'adminGroups') } else { $target.adminGroups = @() }
       }
-      Set-UserPerms $target (Get-Prop $body 'perms')
       Save-Users
-      Send-Json $ctx 200 @{ user = (Get-PublicUser $target) } $null
+      Send-Json $ctx 200 @{ user = (Get-UserForManager $user $target) } $null
       return
     }
+    if (-not (Test-OwnsUser $user $target)) { throw (New-HttpError 403 'Nur selbst angelegte Zugänge.') }
     if ($action -eq '/password' -and $method -eq 'POST') {
       if ($target.role -eq 'display') { throw (New-HttpError 400 'Die Anzeige hat kein Passwort.') }
       $pw = [string](Get-Prop $body 'password')
@@ -710,7 +863,7 @@ function Invoke-Request($ctx) {
       Save-Users
       Remove-UserSessions $target.id $(if ($target.id -eq $user.id) { $token } else { '' })
       Write-Log "Passwort zurückgesetzt: $($target.name) von $($user.name)"
-      Send-Json $ctx 200 @{ user = (Get-PublicUser $target) } $null
+      Send-Json $ctx 200 @{ user = (Get-UserForManager $user $target) } $null
       return
     }
     if ($action -eq '/key' -and $method -eq 'POST') {
@@ -718,7 +871,7 @@ function Invoke-Request($ctx) {
       $target.key = New-RandomHex 24
       Save-Users
       Remove-UserSessions $target.id ''
-      Send-Json $ctx 200 @{ user = (Get-PublicUser $target) } $null
+      Send-Json $ctx 200 @{ user = (Get-UserForManager $user $target) } $null
       return
     }
     if (-not $action -and $method -eq 'DELETE') {
