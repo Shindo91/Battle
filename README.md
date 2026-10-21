@@ -86,10 +86,10 @@ Eigenständiger Jahreskalender für einen Monitor – unabhängig vom Spiel. Ein
 `kalender/index.html` im Browser öffnen (z. B. Chrome/Edge im Vollbild mit `F11` bzw. dem ⛶-Button).
 Keine Installation, kein Server.
 
-- **Jahresansicht** auf einem Bildschirm: 12 Monate × 3 Personen, Spalten = Tage 1–31, pro Monat eine Zeile mit den Wochentagen (Mo–So),
+- **Jahresansicht** auf einem Bildschirm: 12 Monate × 3 Personen, Spalten = Tage 1–31, pro Monat eine Zeile mit Wochentag und Datum (z. B. „Do 01.01.“),
   Wochenenden grau, heutiger Tag rot umrandet, Jahr mit ◀ ▶ wechseln.
-- **Ansichten** oben links umschalten: **Woche**, **Monat**, **Halbjahr**, **Jahr** (auch per Taste
-  `W`/`M`/`H`/`J`, blättern mit ◀ ▶ oder den Pfeiltasten). Klick auf einen Monatsnamen öffnet die
+- **Ansichten** oben links umschalten: **Woche**, **Monat**, **Quartal**, **Halbjahr**, **Jahr** (auch per
+  Taste `W`/`M`/`Q`/`H`/`J`, blättern mit ◀ ▶ oder den Pfeiltasten). Klick auf einen Monatsnamen öffnet die
   Monatsansicht, Klick auf einen Wochentag die Wochenansicht. Die gewählte Ansicht bleibt gespeichert.
 - **Einträge** mit Bezeichnung, Zeitraum *von – bis*, Farbe (Palette oder eigene Farbe) und
   einer oder mehreren Personen. Anlegen über „+ Eintrag“ oder Klick auf einen Tag;
