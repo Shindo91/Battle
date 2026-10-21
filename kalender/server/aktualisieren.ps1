@@ -88,7 +88,7 @@ if ($Ordner) {
   $sha = $(if ($info.Count -gt 0 -and $info[0]) { $info[0].Trim() } else { 'unbekannt' })
   Write-Host ''
   Write-Host "Quelle:       $Ordner"
-  Write-Host "Version:      $($sha.Substring(0, [Math]::Min(7, $sha.Length)))"
+  Write-Host "Version:      $(if ($sha -match '^[0-9a-f]{40}$') { $sha.Substring(0, 7) } else { $sha })"
   if ($info.Count -gt 1) { Write-Host "Beschreibung: $($info[1])" }
   if ($info.Count -gt 2) { Write-Host "Autor/Datum:  $($info[2])" }
 } elseif ($Quelle) {
@@ -184,7 +184,7 @@ foreach ($ch in $changes) {
   Move-Item $tmp $ch.Target -Force
 }
 if ($sha -ne 'test' -and $sha -ne 'unbekannt') { Set-Content -Path $VerFile -Value $sha -Encoding ASCII }
-Write-Log ("Aktualisiert auf $($sha.Substring(0, [Math]::Min(7, $sha.Length))): " + ($changes.Name -join ', ') + "  (alte Versionen: $backup)")
+Write-Log ("Aktualisiert auf $(if ($sha -match '^[0-9a-f]{40}$') { $sha.Substring(0, 7) } else { $sha }): " + ($changes.Name -join ', ') + "  (alte Versionen: $backup)")
 
 # 5. Server neu starten, wenn sich das Server-Skript geändert hat
 if ($changes.Name -contains 'kalender-server.ps1') {

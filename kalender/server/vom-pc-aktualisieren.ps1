@@ -29,6 +29,11 @@
   Andere Anmeldedaten für den Server, z. B. -Credential (Get-Credential DOMÄNE\admin).
 .PARAMETER Ja
   Ohne Rückfrage.
+.PARAMETER Zip
+  Statt aus dem Internet aus einer im Browser heruntergeladenen ZIP-Datei des Repositorys
+  (GitHub → Code → Download ZIP) oder aus deren entpacktem Ordner. PowerShell braucht dann kein Internet.
+.PARAMETER Proxy
+  Proxy für den Internetzugang, z. B. http://proxy.firma.local:8080 (falls PowerShell GitHub sonst nicht erreicht).
 .PARAMETER ZielOrdner
   Statt \\Server\... direkt in diesen Ordner und lokal ausführen (z. B. auf dem Server selbst oder für Tests).
 #>
@@ -40,6 +45,8 @@ param(
   [string]$Repo = 'Shindo91/Battle',
   [pscredential]$Credential,
   [switch]$Ja,
+  [string]$Zip = '',
+  [string]$Proxy = '',
   [string]$ZielOrdner = ''
 )
 
@@ -61,42 +68,81 @@ function Get-Sha256([byte[]]$bytes) {
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch { }
 try { [Net.WebRequest]::DefaultWebProxy.Credentials = [Net.CredentialCache]::DefaultNetworkCredentials } catch { }
 $web = @{ UseBasicParsing = $true; TimeoutSec = 60 }
+if ($Proxy) { $web.Proxy = $Proxy; $web.ProxyUseDefaultCredentials = $true }
 
-# 1. Version bestimmen
-$ref = $(if ($Version) { $Version } else { $Branch })
-try {
-  $c = Invoke-RestMethod @web -Uri "https://api.github.com/repos/$Repo/commits/$([uri]::EscapeDataString($ref))" -Headers @{ Accept = 'application/vnd.github+json' }
-} catch {
-  Stop-WithError "Version '$ref' in $Repo nicht gefunden bzw. GitHub nicht erreichbar ($($_.Exception.Message))."
-}
-$sha = $c.sha
-$msg = ([string]$c.commit.message -split "`n")[0]
-$when = "$($c.commit.author.name), $(([datetime]$c.commit.author.date).ToLocalTime().ToString('dd.MM.yyyy HH:mm'))"
-Write-Host ''
-Write-Host "Version:      $($sha.Substring(0, 7))  ($(if ($Version) { "fest vorgegeben: $Version" } else { "neuester Stand von '$Branch'" }))"
-Write-Host "Beschreibung: $msg"
-Write-Host "Autor/Datum:  $when"
-Write-Host "Änderungen:   https://github.com/$Repo/commit/$sha"
-
-# 2. Herunterladen und prüfen
-$downloaded = [ordered]@{}
-foreach ($src in $Files.Keys) {
-  try {
-    $resp = Invoke-WebRequest @web -Uri "https://raw.githubusercontent.com/$Repo/$sha/$src"
-  } catch {
-    if ($_.Exception.Message -match '404' -and $src -notmatch 'index\.html$|kalender-server\.ps1$') { continue }
-    Stop-WithError "$src konnte nicht geladen werden ($($_.Exception.Message))."
-  }
-  $bytes = $resp.RawContentStream.ToArray()
+function Test-FileContent([string]$name, [byte[]]$bytes) {
   $text = [Text.Encoding]::UTF8.GetString($bytes)
-  if ($bytes.Length -lt 200) { Stop-WithError "$src ist unvollständig." }
-  if ($src -like '*.html' -and ($text -notmatch '(?i)<!doctype html' -or $text -notmatch '</html>')) { Stop-WithError "$src ist keine vollständige HTML-Seite." }
-  if ($src -like '*.ps1') {
+  if ($bytes.Length -lt 200) { Stop-WithError "$name ist unvollständig." }
+  if ($name -like '*.html' -and ($text -notmatch '(?i)<!doctype html' -or $text -notmatch '</html>')) { Stop-WithError "$name ist keine vollständige HTML-Seite." }
+  if ($name -like '*.ps1') {
     $tok = $null; $errs = $null
     [Management.Automation.Language.Parser]::ParseInput($text.TrimStart([char]0xFEFF), [ref]$tok, [ref]$errs) | Out-Null
-    if ($errs.Count -gt 0) { Stop-WithError "$src enthält Syntaxfehler ($($errs[0].Message))." }
+    if ($errs.Count -gt 0) { Stop-WithError "$name enthält Syntaxfehler ($($errs[0].Message))." }
   }
-  $downloaded[$Files[$src]] = $bytes
+}
+
+# 1./2. Version bestimmen, Dateien holen und prüfen
+$downloaded = [ordered]@{}
+if ($Zip) {
+  # Aus der im Browser heruntergeladenen ZIP-Datei (oder dem entpackten Ordner)
+  if (-not (Test-Path $Zip)) { Stop-WithError "$Zip nicht gefunden." }
+  $zipItem = Get-Item $Zip
+  $srcRoot = $zipItem.FullName
+  if (-not $zipItem.PSIsContainer) {
+    $srcRoot = Join-Path ([IO.Path]::GetTempPath()) ('kalender-zip-' + [Guid]::NewGuid().ToString('N'))
+    Expand-Archive -Path $zipItem.FullName -DestinationPath $srcRoot
+  }
+  # Repository-Wurzel suchen (GitHub packt alles in einen Unterordner "Battle-<branch>")
+  $idx = Get-ChildItem $srcRoot -Recurse -Filter 'index.html' | Where-Object { $_.Directory.Name -eq 'kalender' } | Select-Object -First 1
+  if (-not $idx) { Stop-WithError "In $Zip wurde kalender\index.html nicht gefunden – ist das die ZIP-Datei des Repositorys?" }
+  $repoRoot = $idx.Directory.Parent.FullName
+  foreach ($src in $Files.Keys) {
+    $f = Join-Path $repoRoot ($src -replace '/', [IO.Path]::DirectorySeparatorChar)
+    if (-not (Test-Path $f)) {
+      if ($src -notmatch 'index\.html$|kalender-server\.ps1$') { continue }
+      Stop-WithError "$src fehlt in $Zip."
+    }
+    $bytes = [IO.File]::ReadAllBytes($f)
+    Test-FileContent $src $bytes
+    $downloaded[$Files[$src]] = $bytes
+  }
+  if (-not $zipItem.PSIsContainer) { Remove-Item $srcRoot -Recurse -Force -ErrorAction SilentlyContinue }
+  $sha = 'ZIP-' + $zipItem.LastWriteTime.ToString('yyyy-MM-dd_HHmm')
+  $msg = "aus $($zipItem.Name)"
+  $when = "heruntergeladen am $($zipItem.LastWriteTime.ToString('dd.MM.yyyy HH:mm'))"
+  Write-Host ''
+  Write-Host "Quelle:       $($zipItem.FullName)"
+  Write-Host "Stand:        $when"
+} else {
+  # 1. Version bestimmen
+  $ref = $(if ($Version) { $Version } else { $Branch })
+  try {
+    $c = Invoke-RestMethod @web -Uri "https://api.github.com/repos/$Repo/commits/$([uri]::EscapeDataString($ref))" -Headers @{ Accept = 'application/vnd.github+json' }
+  } catch {
+    Stop-WithError "Version '$ref' in $Repo nicht gefunden bzw. GitHub nicht erreichbar ($($_.Exception.Message))."
+  }
+  $sha = $c.sha
+  $msg = ([string]$c.commit.message -split "`n")[0]
+  $when = "$($c.commit.author.name), $(([datetime]$c.commit.author.date).ToLocalTime().ToString('dd.MM.yyyy HH:mm'))"
+  Write-Host ''
+  Write-Host "Version:      $($sha.Substring(0, 7))  ($(if ($Version) { "fest vorgegeben: $Version" } else { "neuester Stand von '$Branch'" }))"
+  Write-Host "Beschreibung: $msg"
+  Write-Host "Autor/Datum:  $when"
+  Write-Host "Änderungen:   https://github.com/$Repo/commit/$sha"
+
+  # 2. Herunterladen und prüfen
+  $downloaded = [ordered]@{}
+  foreach ($src in $Files.Keys) {
+    try {
+      $resp = Invoke-WebRequest @web -Uri "https://raw.githubusercontent.com/$Repo/$sha/$src"
+    } catch {
+      if ($_.Exception.Message -match '404' -and $src -notmatch 'index\.html$|kalender-server\.ps1$') { continue }
+      Stop-WithError "$src konnte nicht geladen werden ($($_.Exception.Message))."
+    }
+    $bytes = $resp.RawContentStream.ToArray()
+    Test-FileContent $src $bytes
+    $downloaded[$Files[$src]] = $bytes
+  }
 }
 
 # 3. Server-Ordner erreichen
