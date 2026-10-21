@@ -13,30 +13,19 @@
 
 .PARAMETER Port
   TCP-Port des Kalenders (Standard 8080).
-.PARAMETER AutoUpdate
-  Richtet zusätzlich die geplante Aufgabe "Kalender-Update" ein: holt täglich die aktuelle Version
-  aus dem GitHub-Repository (siehe aktualisieren.ps1).
-.PARAMETER Branch
-  Branch für die automatische Aktualisierung (Standard: main).
-.PARAMETER UpdateUhrzeit
-  Uhrzeit der täglichen Aktualisierung (Standard 03:00).
-.PARAMETER Proxy
-  Optionaler Proxy für die Aktualisierung, z. B. http://proxy:8080.
 .PARAMETER Entfernen
-  Entfernt geplante Aufgaben und Firewall-Regel wieder (Daten bleiben erhalten).
+  Entfernt geplante Aufgabe und Firewall-Regel wieder (Daten bleiben erhalten).
+
+  Updates aus dem Repository gibt es nur von Hand: aktualisieren.ps1
 #>
 param(
   [int]$Port = 8080,
-  [switch]$AutoUpdate,
-  [string]$Branch = 'main',
-  [string]$UpdateUhrzeit = '03:00',
-  [string]$Proxy = '',
   [switch]$Entfernen
 )
 
 $ErrorActionPreference = 'Stop'
 $TaskName = 'Kalender-Server'
-$UpdateTaskName = 'Kalender-Update'
+$UpdateTaskName = 'Kalender-Update'   # gab es in einer früheren Version; wird entfernt, falls vorhanden
 $RuleName = 'Kalender-Server'
 $Script   = Join-Path $PSScriptRoot 'kalender-server.ps1'
 $DataDir  = Join-Path $PSScriptRoot 'daten'
@@ -85,20 +74,10 @@ Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Pr
 Get-NetFirewallRule -DisplayName $RuleName -ErrorAction SilentlyContinue | Remove-NetFirewallRule
 New-NetFirewallRule -DisplayName $RuleName -Direction Inbound -Protocol TCP -LocalPort $Port -Action Allow -Profile Domain,Private | Out-Null
 
-# Automatische Aktualisierung aus GitHub (optional)
-if (Get-ScheduledTask -TaskName $UpdateTaskName -ErrorAction SilentlyContinue) { Unregister-ScheduledTask -TaskName $UpdateTaskName -Confirm:$false }
-if ($AutoUpdate) {
-  $upd = Join-Path $PSScriptRoot 'aktualisieren.ps1'
-  if (-not (Test-Path $upd)) { Write-Error "aktualisieren.ps1 nicht gefunden: $upd"; exit 1 }
-  $uArgs = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$upd`" -Branch `"$Branch`""
-  if ($Proxy) { $uArgs += " -Proxy `"$Proxy`"" }
-  $uAction   = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $uArgs -WorkingDirectory $PSScriptRoot
-  $uTrigger  = New-ScheduledTaskTrigger -Daily -At $UpdateUhrzeit
-  $uSettings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 15) -StartWhenAvailable -MultipleInstances IgnoreNew
-  Register-ScheduledTask -TaskName $UpdateTaskName -Action $uAction -Trigger $uTrigger -Principal $principal `
-    -Settings $uSettings -Description "Kalender aus GitHub aktualisieren (Branch $Branch)" | Out-Null
-  Write-Host "Automatische Aktualisierung: täglich um $UpdateUhrzeit aus Branch '$Branch'."
-  Write-Host "Sofort aktualisieren: Start-ScheduledTask $UpdateTaskName   (Protokoll: $(Join-Path $DataDir 'update.log'))"
+# Keine automatischen Updates: eine früher eingerichtete Update-Aufgabe entfernen
+if (Get-ScheduledTask -TaskName $UpdateTaskName -ErrorAction SilentlyContinue) {
+  Unregister-ScheduledTask -TaskName $UpdateTaskName -Confirm:$false
+  Write-Host "Automatische Update-Aufgabe '$UpdateTaskName' entfernt – Updates nur noch mit aktualisieren.ps1."
 }
 
 Start-ScheduledTask -TaskName $TaskName

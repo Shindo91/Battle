@@ -47,27 +47,31 @@ gelöscht, sobald der Admin sein Passwort geändert hat.
 Test vom Arbeitsplatz: `http://SERVERNAME:8080/` öffnen → mit `admin` und dem Passwort anmelden →
 eigenes Passwort vergeben.
 
-### Automatische Updates aus GitHub (empfohlen)
+### Updates aus GitHub – nur auf Befehl
 
-Statt neue Versionen von Hand zu kopieren, holt sich der Server sie selbst aus dem Repository
-(`https://github.com/Shindo91/Battle`, öffentlich – keine Zugangsdaten nötig, kein Git auf dem Server):
+Neue Versionen holt sich der Server **nur, wenn du es anstößt** – nie automatisch:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File C:\Kalender\installieren.ps1 -Port 8080 -AutoUpdate -Branch main
+powershell -ExecutionPolicy Bypass -File C:\Kalender\aktualisieren.ps1
 ```
 
-- Legt zusätzlich die Aufgabe **„Kalender-Update“** an: täglich um 03:00 (`-UpdateUhrzeit 05:30` zum Ändern).
-- **Sofort aktualisieren:** `Start-ScheduledTask Kalender-Update` – oder direkt
-  `powershell -ExecutionPolicy Bypass -File C:\Kalender\aktualisieren.ps1 -Branch main`
-- Ablauf: alle Dateien laden → prüfen (vollständig, PowerShell-Syntax fehlerfrei) → nur bei Erfolg ersetzen.
-  Alte Versionen landen in `daten\backup\code-<Datum>`. Hat sich das Server-Skript geändert, startet der
-  Server neu; eine neue Seite laden alle Browser und der Monitor innerhalb von ~20 Sekunden von selbst.
-- Die Kalenderdaten (`daten`) werden dabei nie verändert. Protokoll: `daten\update.log`.
-- Der Server braucht Zugriff auf `https://raw.githubusercontent.com`. Bei einem Proxy: `-Proxy http://proxy:8080`.
-- Solange die Änderungen noch nicht im Branch `main` sind, den Arbeits-Branch angeben, z. B.
-  `-Branch claude/nifty-curie-guwnkh`.
-- **Wichtig:** Damit läuft Code aus dem Repository auf dem Server (als SYSTEM). Schreibrechte auf das
-  Repository daher nur vertrauenswürdigen Personen geben; `main` am besten nur über geprüfte Pull Requests ändern.
+Das Skript
+1. zeigt die neueste Version des Branches (Commit, Beschreibung, Autor, Datum, Link zu den Änderungen),
+2. lädt alle Dateien genau aus diesem Commit und prüft sie (vollständig, PowerShell-Syntax fehlerfrei),
+3. listet, welche Dateien sich ändern würden, und fragt **„Jetzt aktualisieren? (J/N)“**,
+4. sichert die alten Dateien nach `daten\backup\code-<Datum>`, ersetzt sie und startet den Server neu,
+   falls sich das Server-Skript geändert hat. Eine neue Seite laden alle Browser und der Monitor selbst nach.
+
+| Wunsch | Befehl |
+|---|---|
+| Bestimmte Version (Commit) einspielen | `aktualisieren.ps1 -Version 3d93795` |
+| Ohne Rückfrage | `aktualisieren.ps1 -Ja` |
+| Anderer Branch | `aktualisieren.ps1 -Branch main` |
+| Über Proxy | `aktualisieren.ps1 -Proxy http://proxy:8080` |
+
+Die Kalenderdaten (`daten`) werden nie verändert. Die installierte Version steht in
+`daten\installierte-version.txt`, das Protokoll in `daten\update.log`. Der Server braucht dafür
+Zugriff auf `https://api.github.com` und `https://raw.githubusercontent.com`.
 
 ## 3. Kalender einrichten (im Browser als admin)
 
@@ -114,11 +118,11 @@ Link funktioniert dann sofort nicht mehr.
 | Protokoll | `C:\Kalender\daten\server.log` |
 | Daten | `C:\Kalender\daten\kalender.json`, `benutzer.json` |
 | Sicherungen | `C:\Kalender\daten\backup\` – täglich, 60 Tage aufbewahrt. Den Ordner `daten` zusätzlich in die normale Server-Sicherung aufnehmen. |
-| Update | automatisch (siehe oben) oder `Start-ScheduledTask Kalender-Update`. Von Hand: neue `index.html` hineinkopieren genügt (Browser laden selbst neu); bei neuer `kalender-server.ps1` zusätzlich Server neu starten |
+| Update | `aktualisieren.ps1` (siehe oben). Oder von Hand: neue `index.html` hineinkopieren genügt (Browser laden selbst neu); bei neuer `kalender-server.ps1` zusätzlich Server neu starten |
 | Update zurücknehmen | Dateien aus `daten\backup\code-<Datum>` zurückkopieren, Server neu starten |
 | Admin-Passwort vergessen | `powershell -ExecutionPolicy Bypass -File C:\Kalender\kalender-server.ps1 -ResetAdmin` → neues Passwort in `ERSTES-ADMIN-PASSWORT.txt` |
 | Anderer Port | `installieren.ps1 -Port 8090` erneut ausführen |
-| Entfernen | `installieren.ps1 -Entfernen` (Daten bleiben erhalten; entfernt auch die Update-Aufgabe) |
+| Entfernen | `installieren.ps1 -Entfernen` (Daten bleiben erhalten) |
 
 ## 6. Sicherheit
 
@@ -130,3 +134,21 @@ Link funktioniert dann sofort nicht mehr.
   Klartext über das Netzwerk. Für HTTPS kann ein Zertifikat an den Port gebunden werden
   (`netsh http add sslcert …`) – bei Bedarf passe ich den Server dafür an.
 - Der Ordner `daten` enthält die Passwort-Hashes: Zugriff nur für Administratoren.
+
+## 7. Repository schützen
+
+Mit `aktualisieren.ps1` läuft Code aus dem Repository auf dem Server. Deshalb:
+
+1. **Wer darf schreiben?** GitHub → Repository → *Settings → Collaborators*: nur Personen, denen du
+   vertraust. Alle anderen können das öffentliche Repository nur lesen bzw. Vorschläge (Pull Requests)
+   machen, die du selbst annehmen musst.
+2. **Konto absichern:** *Settings → Password and authentication* → **Zwei-Faktor-Authentifizierung**
+   einschalten. Ungenutzte Zugriffstokens (*Developer settings*) und App-Zugriffe
+   (*Applications*) prüfen und entfernen.
+3. **Branch schützen:** *Settings → Rules → Rulesets → New branch ruleset* für den Branch, aus dem
+   aktualisiert wird: „Restrict deletions“, „Block force pushes“, „Require a pull request before merging“.
+   Dann kann niemand – auch keine App – unbemerkt direkt darauf schreiben.
+4. **Vor jedem Update prüfen:** `aktualisieren.ps1` zeigt Commit, Autor und den Link zu den Änderungen,
+   bevor etwas ersetzt wird. Wer ganz sicher gehen will, spielt mit `-Version <Commit>` gezielt eine
+   geprüfte Version ein.
+5. Im Repository liegen **keine Daten oder Passwörter** – die bleiben im Ordner `daten` auf dem Server.
