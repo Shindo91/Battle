@@ -18,6 +18,7 @@
     --accent: #2563eb;
     --strong-line: #c9ced6;
     --hover: #dbeafe;
+    --sel: #93c5fd;
     --wd-bg: #fafbfc;
     --invalid-a: #f3f4f6;
     --invalid-b: #e5e7eb;
@@ -31,7 +32,7 @@
     :root:not([data-theme="light"]) {
       --bg: #101318; --panel: #1b2028; --text: #f3f4f6; --muted: #c4cbd6; --line: #3a424f;
       --weekend: #282f3a; --holiday: #4c1f2b; --holiday-text: #ff9db0; --today: #f43f5e; --accent: #4f8ff7;
-      --strong-line: #5d6778; --hover: #24456f; --wd-bg: #232933; --invalid-a: #14181e; --invalid-b: #1f242c;
+      --strong-line: #5d6778; --hover: #24456f; --sel: #2f5f9e; --wd-bg: #232933; --invalid-a: #14181e; --invalid-b: #1f242c;
       --input-border: #4b5464; --danger: #fca5a5; --danger-border: #991b1b;
       color-scheme: dark;
     }
@@ -39,7 +40,7 @@
   :root[data-theme="dark"] {
     --bg: #101318; --panel: #1b2028; --text: #f3f4f6; --muted: #c4cbd6; --line: #3a424f;
     --weekend: #282f3a; --holiday: #4c1f2b; --holiday-text: #ff9db0; --today: #f43f5e; --accent: #4f8ff7;
-    --strong-line: #5d6778; --hover: #24456f; --wd-bg: #232933; --invalid-a: #14181e; --invalid-b: #1f242c;
+    --strong-line: #5d6778; --hover: #24456f; --sel: #2f5f9e; --wd-bg: #232933; --invalid-a: #14181e; --invalid-b: #1f242c;
     --input-border: #4b5464; --danger: #fca5a5; --danger-border: #991b1b;
     color-scheme: dark;
   }
@@ -147,6 +148,9 @@
     position: relative;
   }
   .day:hover { background: var(--hover) !important; }
+  .day.sel { background: var(--sel) !important; }
+  #calendar { user-select: none; -webkit-user-select: none; touch-action: none; }
+  #calendar.dragging .bar { pointer-events: none; }
   .day.weekend { background: var(--weekend); }
   .day.holiday { background: var(--holiday); }
   .hlabel {
@@ -615,7 +619,8 @@
             const hol = holidayName(date);
             if (hol) { c.classList.add('holiday'); c.title = hol; }
             if (date === today) c.classList.add('today');
-            c.addEventListener('click', () => openEntry(null, { from: date, to: date, persons: [p.id] }));
+            c.dataset.date = date;
+            c.dataset.person = p.id;
           }
           cal.appendChild(c);
         });
@@ -738,7 +743,49 @@
   const newId = prefix => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
   // ---------- Eintrag-Dialog ----------
+  // ---------- Zeitraum mit der Maus ziehen ----------
+  // Maustaste auf einem Tag drücken, bis zum letzten Tag ziehen, loslassen → Dialog mit Von/Bis.
+  // Ein einfacher Klick ergibt einen eintägigen Eintrag.
+  let drag = null;
+  const dayAt = (x, y) => document.elementFromPoint(x, y)?.closest('#calendar .day[data-date]');
+
+  function paintDrag() {
+    const [a, b] = [drag.start, drag.end].sort();
+    cal.querySelectorAll('.day[data-date]').forEach(c => c.classList.toggle('sel',
+      c.dataset.person === drag.person && c.dataset.date >= a && c.dataset.date <= b));
+  }
+  function clearDrag() {
+    cal.classList.remove('dragging');
+    cal.querySelectorAll('.day.sel').forEach(c => c.classList.remove('sel'));
+  }
+
+  cal.addEventListener('pointerdown', e => {
+    const c = e.target.closest('.day[data-date]');
+    if (!c || e.button !== 0) return;
+    e.preventDefault();
+    drag = { person: c.dataset.person, start: c.dataset.date, end: c.dataset.date };
+    cal.classList.add('dragging');
+    paintDrag();
+  });
+  document.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const c = dayAt(e.clientX, e.clientY);
+    if (c && c.dataset.date !== drag.end) { drag.end = c.dataset.date; paintDrag(); }
+  });
+  document.addEventListener('pointerup', () => {
+    if (!drag) return;
+    const [from, to] = [drag.start, drag.end].sort();
+    const person = drag.person;
+    drag = null;
+    cal.classList.remove('dragging');
+    openEntry(null, { from, to, persons: [person] });
+  });
+  document.addEventListener('pointercancel', () => { drag = null; clearDrag(); });
+
   const dlg = document.getElementById('entryDialog');
+  dlg.addEventListener('close', clearDrag);
+  // Fokus nicht im geschlossenen Dialog hängen lassen (sonst greifen die Tastenkürzel nicht)
+  document.querySelectorAll('dialog').forEach(d => d.addEventListener('close', () => document.activeElement?.blur()));
   const fLabel = document.getElementById('fLabel');
   const fFrom = document.getElementById('fFrom');
   const fTo = document.getElementById('fTo');
@@ -944,7 +991,7 @@
   document.querySelectorAll('#viewSwitch button').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
   const KEYS = { w: 'week', m: 'month', q: 'quarter', h: 'half', j: 'year' };
   document.addEventListener('keydown', e => {
-    if (document.querySelector('dialog[open]') || e.target.matches('input')) return;
+    if (document.querySelector('dialog[open]')) return; // Eingabefelder gibt es nur in Dialogen
     if (e.key === 'ArrowLeft') step(-1);
     else if (e.key === 'ArrowRight') step(1);
     else if (!e.ctrlKey && !e.metaKey && !e.altKey && KEYS[e.key]) setView(KEYS[e.key]);

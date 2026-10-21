@@ -93,7 +93,8 @@ Keine Installation, kein Server.
   Monatsansicht, Klick auf einen Wochentag die Wochenansicht. Die gewählte Ansicht bleibt gespeichert.
 - **Einträge** mit Bezeichnung, Zeitraum *von – bis*, Farbe (Palette oder eigene Farbe) und
   einer oder mehreren Personen. Schnellauswahl *1–4 Wochen* setzt das Bis-Datum automatisch.
-  Anlegen über „+ Eintrag“ oder Klick auf einen Tag;
+  Anlegen über „+ Eintrag“, Klick auf einen Tag oder **mit der Maus über mehrere Tage ziehen**
+  (Von/Bis und Person werden übernommen);
   Klick auf einen Balken zum Bearbeiten/Löschen. Überlappende Einträge werden gestapelt.
 - **Feiertage** (Deutschland) werden rosa markiert und mit Namen beschriftet (in Jahr/Halbjahr/Quartal in der Tagesspalte, in Monats- und
   Wochenansicht unter dem Datum). Bundesland in den Einstellungen wählbar; wird für jedes Jahr automatisch berechnet.
