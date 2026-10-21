@@ -26,6 +26,11 @@
   Ohne Rückfrage aktualisieren.
 .PARAMETER Proxy
   Optionaler Proxy, z. B. http://proxy:8080.
+.PARAMETER Ordner
+  Statt aus dem Internet aus diesem Ordner aktualisieren (für Server ohne Internetzugang; die Dateien
+  legt vom-pc-aktualisieren.ps1 dort ab – inkl. version.txt mit den Angaben zur Version).
+.PARAMETER Ziel
+  Installationsordner des Kalenders (Standard: Ordner dieses Skripts).
 .PARAMETER Quelle
   Basis-Adresse statt GitHub (nur für Tests).
 #>
@@ -35,12 +40,14 @@ param(
   [string]$Repo = 'Shindo91/Battle',
   [switch]$Ja,
   [string]$Proxy = '',
+  [string]$Ordner = '',
+  [string]$Ziel = '',
   [string]$Quelle = ''
 )
 
 $ErrorActionPreference = 'Stop'
 $TaskName = 'Kalender-Server'
-$Dir      = $PSScriptRoot
+$Dir      = $(if ($Ziel) { (Resolve-Path $Ziel).Path } else { $PSScriptRoot })
 $DataDir  = Join-Path $Dir 'daten'
 $LogFile  = Join-Path $DataDir 'update.log'
 $VerFile  = Join-Path $DataDir 'installierte-version.txt'
@@ -73,7 +80,18 @@ function Get-Sha256([byte[]]$bytes) {
 }
 
 # 1. Version bestimmen
-if ($Quelle) {
+if ($Ordner) {
+  if (-not (Test-Path $Ordner)) { Write-Log "FEHLER: Ordner $Ordner nicht gefunden. Nichts geändert."; exit 1 }
+  $Ordner = (Resolve-Path $Ordner).Path
+  $info = @(); $vt = Join-Path $Ordner 'version.txt'
+  if (Test-Path $vt) { $info = @(Get-Content $vt -Encoding UTF8) }
+  $sha = $(if ($info.Count -gt 0 -and $info[0]) { $info[0].Trim() } else { 'unbekannt' })
+  Write-Host ''
+  Write-Host "Quelle:       $Ordner"
+  Write-Host "Version:      $($sha.Substring(0, [Math]::Min(7, $sha.Length)))"
+  if ($info.Count -gt 1) { Write-Host "Beschreibung: $($info[1])" }
+  if ($info.Count -gt 2) { Write-Host "Autor/Datum:  $($info[2])" }
+} elseif ($Quelle) {
   $base = $Quelle.TrimEnd('/')
   $sha = 'test'
   Write-Host "Quelle: $base"
@@ -100,7 +118,14 @@ Write-Host ''
 # 2. Alles herunterladen und prüfen, bevor irgendetwas ersetzt wird
 $downloaded = @{}
 foreach ($src in $Files.Keys) {
-  try {
+  if ($Ordner) {
+    $f = Join-Path $Ordner $Files[$src]
+    if (-not (Test-Path $f)) {
+      if ($src -notmatch 'index\.html$|kalender-server\.ps1$') { Write-Host "($($Files[$src]) liegt nicht im Ordner – bleibt unverändert)"; continue }
+      Write-Log "FEHLER: $($Files[$src]) fehlt in $Ordner. Nichts geändert."; exit 1
+    }
+    $resp = [pscustomobject]@{ RawContentStream = New-Object IO.MemoryStream(, [IO.File]::ReadAllBytes($f)) }
+  } else { try {
     $resp = Invoke-WebRequest @web -Uri "$base/$src"
   } catch {
     # Hilfsskripte gibt es in älteren Versionen evtl. noch nicht – dann bleiben die vorhandenen
@@ -108,7 +133,7 @@ foreach ($src in $Files.Keys) {
     if ($notFound -and $src -notmatch 'index\.html$|kalender-server\.ps1$') { Write-Host "($($Files[$src]) gibt es in dieser Version nicht – bleibt unverändert)"; continue }
     Write-Log "FEHLER: $src konnte nicht geladen werden ($($_.Exception.Message)). Nichts geändert."
     exit 1
-  }
+  } }
   $bytes = $resp.RawContentStream.ToArray()   # Rohdaten: BOM und Umlaute bleiben unverändert
   $text = [Text.Encoding]::UTF8.GetString($bytes)
   if ($bytes.Length -lt 200) { Write-Log "FEHLER: $src ist unvollständig. Nichts geändert."; exit 1 }
@@ -134,7 +159,7 @@ foreach ($src in $Files.Keys) {
 }
 if ($changes.Count -eq 0) {
   Write-Host 'Bereits aktuell – nichts zu tun.'
-  if ($sha -ne 'test') { Set-Content -Path $VerFile -Value $sha -Encoding ASCII }
+  if ($sha -ne 'test' -and $sha -ne 'unbekannt') { Set-Content -Path $VerFile -Value $sha -Encoding ASCII }
   exit 0
 }
 Write-Host 'Folgende Dateien würden ersetzt:'
@@ -158,7 +183,7 @@ foreach ($ch in $changes) {
   [IO.File]::WriteAllBytes($tmp, $downloaded[$ch.Src])
   Move-Item $tmp $ch.Target -Force
 }
-if ($sha -ne 'test') { Set-Content -Path $VerFile -Value $sha -Encoding ASCII }
+if ($sha -ne 'test' -and $sha -ne 'unbekannt') { Set-Content -Path $VerFile -Value $sha -Encoding ASCII }
 Write-Log ("Aktualisiert auf $($sha.Substring(0, [Math]::Min(7, $sha.Length))): " + ($changes.Name -join ', ') + "  (alte Versionen: $backup)")
 
 # 5. Server neu starten, wenn sich das Server-Skript geändert hat
