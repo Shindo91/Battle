@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- artifact:start -->
+<title>BitCraft Crafting-Planer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="style.css">
+<!-- artifact:head-end -->
+</head>
+<body>
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="brand">
+      <svg class="hex" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3 35 11.5v17L20 37 5 28.5v-17z" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M13 23l7-9 7 9-7 4z" fill="currentColor"/></svg>
+      <h1 data-t="title">BitCraft Crafting-Planer</h1>
+    </div>
+    <div class="lang-toggle" role="group" aria-label="Sprache / Language">
+      <button type="button" data-lang="de" aria-pressed="true">DE</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="planner-input" aria-labelledby="wishlist-title">
+    <p class="intro" data-t="subtitle"></p>
+    <div class="search-wrap">
+      <label for="search" class="label" data-t="searchLabel">Gegenstand suchen</label>
+      <input id="search" type="search" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="search-results" aria-autocomplete="list">
+      <ul id="search-results" class="search-results" role="listbox" hidden></ul>
+    </div>
+
+    <div class="wishlist">
+      <div class="section-head">
+        <h2 id="wishlist-title" data-t="wishlist">Deine Craft-Liste</h2>
+        <button type="button" id="clear" class="link" data-t="clearAll">Liste leeren</button>
+      </div>
+      <ul id="targets" class="targets"></ul>
+      <div id="targets-empty" class="empty-state" hidden>
+        <p data-t="emptyList"></p>
+        <button type="button" id="example" class="btn-secondary" data-t="example">Beispiel laden</button>
+      </div>
+    </div>
+    <p class="data-note" data-t="dataNote"></p>
+  </section>
+
+  <section id="results" class="results">
+    <section class="card farm" aria-labelledby="farm-title">
+      <div class="section-head">
+        <h2 id="farm-title"><span data-t="farmTitle">Zu farmen</span> <span id="farm-count" class="count"></span></h2>
+      </div>
+      <p class="hint" data-t="farmHint"></p>
+      <ul id="farm-list" class="farm-list"></ul>
+    </section>
+
+    <section class="overview" aria-label="Stationen und Werkzeuge">
+      <div>
+        <h3 data-t="stationsTitle">Benötigte Stationen</h3>
+        <ul id="stations" class="chips"></ul>
+      </div>
+      <div>
+        <h3 data-t="toolsTitle">Benötigte Werkzeuge</h3>
+        <ul id="tools" class="chips"></ul>
+      </div>
+    </section>
+
+    <section class="card steps-card" aria-labelledby="steps-title">
+      <div class="section-head">
+        <h2 id="steps-title"><span data-t="stepsTitle">Crafting-Schritte</span> <span id="steps-count" class="count"></span></h2>
+        <div class="sort-toggle" role="group">
+          <button type="button" data-sort="order" data-t="sortOrder" aria-pressed="true">Reihenfolge</button>
+          <button type="button" data-sort="station" data-t="sortStation" aria-pressed="false">Nach Station</button>
+        </div>
+      </div>
+      <p class="hint" data-t="stepsHint"></p>
+      <ol id="steps" class="steps"></ol>
+    </section>
+  </section>
+</main>
+
+<script src="data.js"></script>
+<script src="i18n.js"></script>
+<script src="planner.js"></script>
+<script src="app.js"></script>
+<!-- artifact:end -->
+</body>
+</html>
